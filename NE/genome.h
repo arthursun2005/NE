@@ -43,7 +43,6 @@ public:
     void mutate_add_node(ne_params& params);
     void mutate_add_gene(ne_params& params);
     void mutate_functions(ne_params& params);
-    void mutate_weights(ne_params& params);
     
     void step();
     
@@ -53,12 +52,7 @@ public:
     
     static void crossover(const ne_genome* a, const ne_genome* b, ne_genome* baby, ne_params& params);
     
-    static float64 distance_nodes(const ne_genome* a, const ne_genome* b, const ne_params &params);
-    static float64 distance_genes(const ne_genome* a, const ne_genome* b, const ne_params &params);
-    
-    static inline float64 distance(const ne_genome* a, const ne_genome* b, const ne_params &params) {
-        return distance_nodes(a, b, params) + distance_genes(a, b, params);
-    }
+    static float64 distance(const ne_genome* a, const ne_genome* b, const ne_params &params);
     
     float64 fitness;
     uint64 activations;

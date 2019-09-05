@@ -21,12 +21,8 @@ void ne_mutate(ne_genome* g, ne_params& params) {
         g->mutate_functions(params);
     }
     
-    if(random(0.0, 1.0) < params.mutate_weight_prob) {
-        g->mutate_weights(params);
-    }
-    
     if(random(0.0, 1.0) < params.mutate_activation_prob) {
-        g->activations++;
+        //g->activations++;
     }
 }
 
@@ -53,8 +49,9 @@ void ne_genome::reset(const ne_params &params) {
             
             gene->i = nodes[i];
             gene->j = nodes[q];
-            gene->weight = gaussian_random();
+            gene->function.randomlize();
             gene->id = genes.size();
+            gene->enable();
             
             insert(gene);
         }
@@ -89,7 +86,7 @@ void ne_genome::mutate_add_node(ne_params &params) {
     if(gs != 0) {
         ne_gene* gene = genes[rand64() % gs];
         
-        if(!gene->enabled()) return;
+        if(gene->disabled()) return;
         
         ne_node* node = new ne_node(params.node_ids++);
         insert(node);
@@ -99,7 +96,8 @@ void ne_genome::mutate_add_node(ne_params &params) {
         gene1->i = gene->i;
         gene1->j = node;
         gene1->id = params.gene_ids++;
-        gene1->weight = 1.0;
+        gene1->function.set_identity();
+        gene1->enable();
         
         insert(gene1);
         
@@ -108,7 +106,8 @@ void ne_genome::mutate_add_node(ne_params &params) {
         gene2->i = node;
         gene2->j = gene->j;
         gene2->id = params.gene_ids++;
-        gene2->weight = gene->weight;
+        gene2->function = gene->function;
+        gene2->enable();
         
         insert(gene2);
         
@@ -125,30 +124,24 @@ void ne_genome::mutate_add_gene(ne_params &params) {
     
     ne_gene_set::iterator it = gene_set.find(&q);
     if(it != gene_set.end()) {
-        if(!(*it)->enabled()) {
-            (*it)->weight = gaussian_random();
+        if((*it)->disabled()) {
+            (*it)->function.randomlize();
         }
     }else{
         ne_gene* gene = new ne_gene(q);
         
         gene->id = params.gene_ids++;
-        gene->weight = gaussian_random();
+        gene->function.randomlize();
+        gene->enable();
         
         insert(gene);
     }
 }
 
 void ne_genome::mutate_functions(ne_params &params) {
-    for(ne_node* node : nodes) {
-        if(random(0.0, 1.0) < params.mutate_function_rate)
-            node->function.mutate(params);
-    }
-}
-
-void ne_genome::mutate_weights(ne_params &params) {
     for(ne_gene* gene : genes) {
-        if(gene->enabled() && random(0.0, 1.0) < params.mutate_weight_rate)
-            gene->weight += random(-params.mutate_weight_power, params.mutate_weight_power);
+        if(gene->enabled() && random(0.0, 1.0) < params.mutate_function_rate)
+            gene->function.mutate(params);
     }
 }
 
@@ -183,8 +176,10 @@ void ne_genome::crossover(const ne_genome *a, const ne_genome *b, ne_genome* bab
         }else if((*itA)->id == (*itB)->id) {
             gene = **itA;
             
-            if(mate_avg) gene.weight = 0.5 * ((*itA)->weight + (*itB)->weight);
-            else gene.weight = (rand32() & 1) ? (*itA)->weight : (*itB)->weight;
+            if(mate_avg) ne_function::crossover_avg(&(*itA)->function, &(*itB)->function, &gene.function);
+            else ne_function::crossover_rnd(&(*itA)->function, &(*itB)->function, &gene.function);
+            
+            gene._enabled = (rand32() & 1) ? (*itA)->_enabled : (*itB)->_enabled;
             
             skip = false;
             
@@ -207,57 +202,9 @@ void ne_genome::crossover(const ne_genome *a, const ne_genome *b, ne_genome* bab
             baby->pass_down(new ne_gene(gene));
         }
     }
-    
-    for(ne_node* node : baby->nodes) {
-        ne_node_set::iterator nA, nB;
-        nA = a->node_set.find(node);
-        nB = b->node_set.find(node);
-        if(nA != a->node_set.end() && nB != b->node_set.end()) {
-            ne_function::crossover(&(*nA)->function, &(*nB)->function, &node->function);
-        }
-    }
 }
 
-float64 ne_genome::distance_nodes(const ne_genome *a, const ne_genome *b, const ne_params &params) {
-    float64 d = 0.0;
-    uint64 align = 0;
-    uint64 miss = 0;
-    
-    std::vector<ne_node*>::const_iterator itA, itB;
-    std::vector<ne_node*>::const_iterator endA, endB;
-    
-    itA = a->nodes.begin();
-    itB = b->nodes.begin();
-    
-    endA = a->nodes.end();
-    endB = b->nodes.end();
-    
-    while(itA != endA || itB != endB) {
-        if(itA == endA) {
-            ++miss;
-            ++itB;
-        }else if(itB == endB) {
-            ++miss;
-            ++itA;
-        }else if((*itA)->id == (*itB)->id) {
-            float64 q = ne_function::distance(&(*itA)->function, &(*itB)->function);
-            d += q * q;
-            ++align;
-            ++itA;
-            ++itB;
-        }else if((*itA)->id < (*itB)->id) {
-            ++miss;
-            ++itA;
-        }else{
-            ++miss;
-            ++itB;
-        }
-    }
-    
-    return miss * params.compat_node + sqrt(d / (float64) align) * params.compat_function;
-}
-
-float64 ne_genome::distance_genes(const ne_genome *a, const ne_genome *b, const ne_params &params) {
+float64 ne_genome::distance(const ne_genome *a, const ne_genome *b, const ne_params &params) {
     float64 d = 0.0;
     uint64 align = 0;
     uint64 miss = 0;
@@ -279,8 +226,7 @@ float64 ne_genome::distance_genes(const ne_genome *a, const ne_genome *b, const 
             ++miss;
             ++itA;
         }else if((*itA)->id == (*itB)->id) {
-            float64 q = (*itA)->weight - (*itB)->weight;
-            d += q * q;
+            d += ne_function::distance(&(*itA)->function, &(*itB)->function);
             ++align;
             ++itA;
             ++itB;
@@ -293,7 +239,7 @@ float64 ne_genome::distance_genes(const ne_genome *a, const ne_genome *b, const 
         }
     }
     
-    return miss * params.compat_gene + sqrt(d / (float64) align) * params.compat_weight;
+    return miss * params.compat_gene + sqrt(d / (float64) align) * params.compat_function;
 }
 
 void ne_genome::flush() {
@@ -320,16 +266,13 @@ void ne_genome::step() {
         for(ne_gene* gene : genes) {
             if(gene->i->activated && gene->enabled()) {
                 gene->j->computed = true;
-                gene->j->sum += gene->i->value * gene->weight;
+                gene->j->sum += gene->function(gene->i->value);
             }
         }
         
         for(ne_node* node : nodes) {
             node->activated = node->computed;
-            
-            if(node->activated) {
-                node->value = node->function(node->sum);
-            }
+            node->value = node->sum;
         }
         
         ++n;
