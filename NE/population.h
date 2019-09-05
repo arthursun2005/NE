@@ -20,7 +20,7 @@ struct ne_species
     uint64 parents;
     uint64 offsprings;
     
-    static inline bool compare(const ne_species* a, const ne_species* b) {
+    static inline bool sort(const ne_species* a, const ne_species* b) {
         return a->avg_fitness > b->avg_fitness;
     }
 };
@@ -30,44 +30,45 @@ class ne_population
     
 public:
     
-    ne_population(uint64 input_size, uint64 output_size, uint64 population);
+    ne_population(const ne_params& params);
     
-    ne_population(const char* file_name);
+    ne_population(const ne_population& population);
+    ne_population& operator = (const ne_population& population);
     
-    ne_population(const ne_population&) = delete;
-    ne_population& operator = (const ne_population&) = delete;
-    
-    ~ne_population();
+    ~ne_population() {
+        clear();
+    }
     
     void initialize();
     
     ne_genome* select();
     void reproduce();
     
-    inline ne_genome* operator [] (uint64 i) {
-        return genomes[i];
-    }
-    
-    friend class ne_genome;
-    
+    ne_params params;
+        
     uint64 parents;
     
     std::vector<ne_species*> species;
+    std::vector<ne_genome*> genomes;
     
 protected:
     
-    void clear();
+    inline void clear() {
+        for(ne_species* sp : species) {
+            delete sp;
+        }
+        
+        species.clear();
+        
+        for(ne_genome* g : genomes) {
+            delete g;
+        }
+        
+        genomes.clear();
+    }
     
     ne_genome* breed(ne_species* sp);
-    void _add(ne_genome* g);
-    
-    uint64 input_size;
-    uint64 output_size;
-    
-    uint64 population;
-    uint64 accuracy;
-    
-    std::vector<ne_genome*> genomes;
+    void add(ne_genome* g);
     
 };
 

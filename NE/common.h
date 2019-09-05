@@ -11,8 +11,8 @@
 
 #include <cmath>
 #include <functional>
-#include <random>
 #include <cfloat>
+#include <random>
 #include <iostream>
 
 typedef float float32;
@@ -43,6 +43,19 @@ inline float64 gaussian_random() {
     static std::default_random_engine generator;
     static std::normal_distribution<float64> distribution(0.0, 1.0);
     return distribution(generator);
+}
+
+template <class T, class C>
+inline void insert_in_order(std::vector<T>* a, const T& x, const C& compare) {
+    typename std::vector<T>::iterator end = a->end();
+    
+    while(end-- != a->begin()) {
+        if(compare(*end, x)) break;
+    }
+    
+    ++end;
+    a->insert(end, x);
+    
 }
 
 #endif /* common_h */

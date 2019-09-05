@@ -14,18 +14,6 @@
 
 class ne_population;
 
-struct ne_input
-{
-    float64 value;
-    ne_function** functions;
-};
-
-struct ne_output
-{
-    float64 value;
-    ne_function* function;
-};
-
 class ne_genome
 {
     
@@ -36,38 +24,103 @@ public:
     ne_genome(const ne_genome& genome);
     ne_genome& operator = (const ne_genome& genome);
     
-    ne_genome(ne_population* population);
-    ~ne_genome();
-    
-    ne_input* get_inputs() {
-        return inputs.data();
+    inline ~ne_genome() {
+        clear();
     }
     
-    ne_output* get_outputs() {
-        return outputs.data();
+    void reset(const ne_params& params);
+    
+    inline ne_node** inputs() {
+        return nodes.data();
     }
     
-    void mutate(float64 rate, float64 power);
-    void run();
+    inline ne_node** outputs() {
+        return nodes.data() + input_size;
+    }
     
-    float64 fitness;
+    void flush();
     
-    static inline bool compare(const ne_genome* a, const ne_genome* b) {
+    void mutate_add_node(ne_params& params);
+    void mutate_add_gene(ne_params& params);
+    void mutate_functions(ne_params& params);
+    void mutate_weights(ne_params& params);
+    
+    void step();
+    
+    static inline bool sort(const ne_genome* a, const ne_genome* b) {
         return a->fitness > b->fitness;
     }
     
-    static ne_genome* crossover(const ne_genome* a, const ne_genome* b);
-    static float64 distance(const ne_genome* a, const ne_genome* b);
+    static void crossover(const ne_genome* a, const ne_genome* b, ne_genome* baby, ne_params& params);
+    
+    static float64 distance_nodes(const ne_genome* a, const ne_genome* b, const ne_params &params);
+    static float64 distance_genes(const ne_genome* a, const ne_genome* b, const ne_params &params);
+    
+    static inline float64 distance(const ne_genome* a, const ne_genome* b, const ne_params &params) {
+        return distance_nodes(a, b, params) + distance_genes(a, b, params);
+    }
+    
+    float64 fitness;
+    uint64 activations;
+    
+    bool eliminated;
+    
+    std::vector<ne_node*> nodes;
+    std::vector<ne_gene*> genes;
     
 protected:
     
-    void _initialize(const ne_genome& genome);
+    inline void insert(ne_node* node) {
+        insert_in_order(&nodes, node, ne_node::sort);
+        node_set.insert(node);
+    }
     
-    std::vector<ne_input> inputs;
-    std::vector<ne_output> outputs;
+    inline void insert(ne_gene* gene) {
+        insert_in_order(&genes, gene, ne_gene::sort);
+        gene_set.insert(gene);
+    }
     
-    uint64 accuracy;
+    inline ne_node* find(ne_node* node) {
+        ne_node_set::iterator it = node_set.find(node);
+        
+        if(it == node_set.end()) {
+            ne_node* new_node = new ne_node(*node);
+            insert(new_node);
+            return new_node;
+        }else{
+            return *it;
+        }
+    }
+    
+    inline void pass_down(ne_gene* gene) {
+        gene->i = find(gene->i);
+        gene->j = find(gene->j);
+        
+        insert(gene);
+    }
+    
+    inline void clear() {
+        node_set.clear();
+        gene_set.clear();
+        
+        for(ne_gene* gene : genes)
+            delete gene;
+        
+        for(ne_node* node : nodes)
+            delete node;
+        
+        genes.clear();
+        nodes.clear();
+    }
+    
+    ne_node_set node_set;
+    ne_gene_set gene_set;
+    
+    uint64 input_size;
+    uint64 output_size;
     
 };
+
+void ne_mutate(ne_genome* g, ne_params& params);
 
 #endif /* genome_h */
