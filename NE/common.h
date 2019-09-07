@@ -48,7 +48,6 @@ inline void insert_in_order(std::vector<T>* a, const T& x, const C& compare) {
     
     ++end;
     a->insert(end, x);
-    
 }
 
 #endif /* common_h */
