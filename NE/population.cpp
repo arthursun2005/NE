@@ -30,9 +30,7 @@ void ne_genome::reset(ne_params &params) {
     
     initialize();
     
-    for(uint64 i = 0; i < ne_initial_genes; ++i) {
-        mutate_add_gene(params);
-    }
+    mutate_add_gene(params);
 }
 
 ne_genome& ne_genome::operator = (const ne_genome &genome) {
@@ -243,7 +241,7 @@ float64 ne_genome::distance(const ne_genome *a, const ne_genome *b, const ne_par
         }
     }
     
-    return miss * params.compat_gene + d / (float64) align * params.compat_weight;
+    return miss * params.compat_gene + d * params.compat_weight / (float64) align;
 }
 
 ne_population& ne_population::operator = (const ne_population& population) {
@@ -277,14 +275,13 @@ void ne_population::initialize() {
 
 void ne_population::add(ne_genome *g) {
     ne_species* sp = nullptr;
-    float64 mc = params.compat_thresh;
     
     for(ne_species* s : species) {
         ne_genome* j = s->genomes.front();
         float64 ts = ne_genome::distance(g, j, params);
-        if(ts < mc) {
-            mc = ts;
+        if(ts < params.compat_thresh) {
             sp = s;
+            break;
         }
     }
     
@@ -380,8 +377,12 @@ void ne_population::reproduce() {
             g->eliminated = true;
         }
         
-        for(uint64 n = 0; n != sp->offsprings; ++n) {
-            babies.push_back(breed(sp));
+        if(sp->offsprings != 0) {
+            for(uint64 n = 1; n != sp->offsprings; ++n) {
+                babies.push_back(breed(sp));
+            }
+            
+            sp->genomes.front()->eliminated = false;
         }
     }
     

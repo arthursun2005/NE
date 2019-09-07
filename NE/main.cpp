@@ -15,7 +15,7 @@ ne_population* population;
 
 #define time_step 0.01f
 
-int gens = 256;
+int gens;
 ne_params params;
 
 struct Pendulum
@@ -322,40 +322,19 @@ struct Game2048
             if(grid[i] == 0) return -1;
         }
         
-        bool mx = false;
-        bool my = false;
-        
         for(int y = 0; y < 4; ++y) {
             for(int x = 0; x < 4; ++x) {
                 uint64 v1 = get(x, y);
                 if(x != 3 && get(x + 1, y) == v1) {
-                    mx = true;
-                }
-                if(x != 0 && get(x - 1, y) == v1) {
-                    mx = true;
+                    return 0;
                 }
                 if(y != 3 && get(x, y + 1) == v1) {
-                    my = true;
-                }
-                if(y != 0 && get(x, y - 1) == v1) {
-                    my = true;
+                    return 0;
                 }
             }
         }
         
-        if(mx && my)  {
-            return 2;
-        }
-        
-        if(mx) {
-            return 0;
-        }
-        
-        if(my) {
-            return 1;
-        }
-        
-        return 3;
+        return 1;
     }
     
     void print() {
@@ -372,7 +351,7 @@ struct Game2048
         fitness = 0.0;
         
         reset();
-        gen->flush();
+        
         
         ne_node** inputs = gen->inputs();
         ne_node** outputs = gen->outputs();
@@ -383,13 +362,14 @@ struct Game2048
             //print();
             //std::cout << std::endl;
             
-            if(m == 2) {
+            if(m == 1) {
                 break;
             }else{
                 for(int i = 0; i < 16; ++i) {
                     inputs[i]->value = grid[i];
                 }
                 
+                gen->flush();
                 gen->compute();
                 
                 std::vector<int> choices(4);
@@ -401,57 +381,23 @@ struct Game2048
                 
                 bool moved = false;
                 
-                if(m == -1) {
-                    
-                    uint64 i = 0;
-                    while(!moved) {
-                        int c = choices[i];
-                        if(c == 0) {
-                            fitness += move_up(moved);
-                            //std::cout << "up" << std::endl;
-                        }else if(c == 1) {
-                            fitness += move_down(moved);
-                            //std::cout << "down" << std::endl;
-                        }else if(c == 2) {
-                            fitness += move_left(moved);
-                            //std::cout << "left" << std::endl;
-                        }else{
-                            fitness += move_right(moved);
-                            //std::cout << "right" << std::endl;
-                        }
-                        ++i;
-                    }
-                    /*
+                uint64 i = 0;
+                while(!moved) {
+                    int c = choices[i];
                     if(c == 0) {
-                        fitness += move_up();
+                        fitness += move_up(moved);
                         //std::cout << "up" << std::endl;
                     }else if(c == 1) {
-                        fitness += move_down();
+                        fitness += move_down(moved);
                         //std::cout << "down" << std::endl;
                     }else if(c == 2) {
-                        fitness += move_left();
+                        fitness += move_left(moved);
                         //std::cout << "left" << std::endl;
                     }else{
-                        fitness += move_right();
+                        fitness += move_right(moved);
                         //std::cout << "right" << std::endl;
                     }
-                     */
-                }else if(m == 0) {
-                    if(outputs[2]->value > outputs[3]->value) {
-                        move_left(moved);
-                        //std::cout << "f left" << std::endl;
-                    }else{
-                        move_right(moved);
-                        //std::cout << "f right" << std::endl;
-                    }
-                }else{
-                    if(outputs[0]->value > outputs[1]->value) {
-                        move_up(moved);
-                        //std::cout << "f up" << std::endl;
-                    }else{
-                        move_down(moved);
-                        //std::cout << "f down" << std::endl;
-                    }
+                    ++i;
                 }
                 
                 add2();
@@ -474,6 +420,13 @@ void initialize() {
 }
 
 int main(int argc, const char * argv[]) {
+    if(argc == 1) {
+        std::cout << "enter the number of generations" << std::endl;
+        return 1;
+    }else{
+        gens = std::stoi(argv[1]);
+    }
+    
     initialize();
     
     ne_genome* best = nullptr;

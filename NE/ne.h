@@ -18,8 +18,6 @@
 
 #define ne_max_nodes (1ull << 40)
 
-#define ne_initial_genes 8
-
 struct ne_params
 {
     float64 mutate_weight_prob;
@@ -44,7 +42,7 @@ struct ne_params
     uint64 population;
     
     ne_params() {
-        mutate_weight_prob = 0.75;
+        mutate_weight_prob = 0.8;
         mutate_weight_power = 2.0;
         
         mutate_add_node_prob = 0.05;
