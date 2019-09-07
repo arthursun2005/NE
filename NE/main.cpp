@@ -193,5 +193,7 @@ int main(int argc, const char * argv[]) {
         std::cout << i << "\t" << highs[i] << std::endl;
     }
     
+    delete population;
+    
     return 0;
 }
