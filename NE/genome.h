@@ -42,7 +42,7 @@ public:
     }
     
     void flush();
-    void step();
+    void compute();
     
     void mutate_add_node(ne_params& params);
     void mutate_add_gene(ne_params& params);

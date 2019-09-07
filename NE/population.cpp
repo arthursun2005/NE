@@ -66,7 +66,7 @@ void ne_genome::flush() {
     }
 }
 
-void ne_genome::step() {
+void ne_genome::compute() {
     for(ne_node* node : nodes) {
         node->activated = node->id < input_size;
         node->sum = 0.0;
@@ -146,7 +146,8 @@ void ne_genome::mutate_add_gene(ne_params &params) {
 
 void ne_genome::mutate_weights(const ne_params &params) {
     for(ne_gene* gene : genes) {
-        gene->weight += random(-params.mutate_weight_power, params.mutate_weight_power);
+        if(gene->enabled())
+            gene->weight += random(-params.mutate_weight_power, params.mutate_weight_power);
     }
 }
 
@@ -242,7 +243,7 @@ float64 ne_genome::distance(const ne_genome *a, const ne_genome *b, const ne_par
         }
     }
     
-    return miss * params.compat_gene + d / (float64) align * params.compat_function;
+    return miss * params.compat_gene + d / (float64) align * params.compat_weight;
 }
 
 ne_population& ne_population::operator = (const ne_population& population) {

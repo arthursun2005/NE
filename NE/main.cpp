@@ -15,7 +15,7 @@ ne_population* population;
 
 #define time_step 0.01f
 
-int gens = 64;
+int gens = 256;
 ne_params params;
 
 struct Pendulum
@@ -82,7 +82,7 @@ struct Pendulum
                 inputs[3]->value = s;
                 inputs[4]->value = va;
                 
-                gen->step();
+                gen->compute();
                 
                 action = outputs[0]->value * 2.0 - 1.0;
                 
@@ -135,7 +135,7 @@ struct XOR
                 inputs[0]->value = a;
                 inputs[1]->value = b;
                 
-                gen->step();
+                gen->compute();
                 
                 double d = outputs[0]->value - c;
                 fitness += 1.0 - d * d;
@@ -146,7 +146,322 @@ struct XOR
     }
 };
 
-typedef Pendulum obj_type;
+struct Game2048
+{
+    static const uint64 input_size = 16;
+    static const uint64 output_size = 4;
+    
+    float64 fitness;
+    
+    uint64 grid[16];
+    
+    inline uint64& get(int x, int y) {
+        return grid[x + y * 4];
+    }
+    
+    void reset() {
+        for(int i = 0; i < 16; ++i) {
+            grid[i] = 0;
+        }
+        
+        add2();
+    }
+    
+    void add2() {
+        std::vector<int> idx;
+        for(int i = 0; i < 16; ++i) {
+            if(grid[i] == 0) idx.push_back(i);
+            if(grid[i] == 2) idx.push_back(i);
+        }
+        
+        grid[idx[rand64() % idx.size()]] += 2;
+    }
+    
+    uint64 move_left(bool& moved) {
+        uint64 score = 0;
+        for(int y = 0; y < 4; ++y) {
+            for(int x = 0; x < 4; ++x) {
+                uint64 v1 = get(x, y);
+                if(v1 == 0) continue;
+                
+                for(int i = x + 1; i < 4; ++i) {
+                    uint64 v2 = get(i, y);
+                    if(v1 == v2) {
+                        score += v1 + v2;
+                        moved = true;
+                        
+                        get(x, y) += get(i, y);
+                        get(i, y) = 0;
+                        
+                        break;
+                    }else if(v1 != v2 && v2 != 0) {
+                        break;
+                    }
+                }
+                
+                int l = x;
+                while(l != 0 && get(l - 1, y) == 0) {
+                    get(l - 1, y) = get(l, y);
+                    get(l, y) = 0;
+                    --l;
+                    
+                    moved = true;
+                }
+            }
+        }
+        return score;
+    }
+    
+    uint64 move_right(bool& moved) {
+        uint64 score = 0;
+        for(int y = 0; y < 4; ++y) {
+            for(int x = 3; x >= 0; --x) {
+                uint64 v1 = get(x, y);
+                if(v1 == 0) continue;
+                
+                for(int i = x - 1; i >= 0; --i) {
+                    uint64 v2 = get(i, y);
+                    if(v1 == v2) {
+                        score += v1 + v2;
+                        moved = true;
+                        
+                        get(x, y) += get(i, y);
+                        get(i, y) = 0;
+                        
+                        break;
+                    }else if(v1 != v2 && v2 != 0) {
+                        break;
+                    }
+                }
+                
+                int r = x;
+                while(r != 3 && get(r + 1, y) == 0) {
+                    get(r + 1, y) = get(r, y);
+                    get(r, y) = 0;
+                    ++r;
+                    
+                    moved = true;
+                }
+            }
+        }
+        return score;
+    }
+    
+    uint64 move_up(bool& moved) {
+        uint64 score = 0;
+        for(int x = 0; x < 4; ++x) {
+            for(int y = 0; y < 4; ++y) {
+                uint64 v1 = get(x, y);
+                if(v1 == 0) continue;
+                
+                for(int i = y + 1; i < 4; ++i) {
+                    uint64 v2 = get(x, i);
+                    if(v1 == v2) {
+                        score += v1 + v2;
+                        moved = true;
+                        
+                        get(x, y) += get(x, i);
+                        get(x, i) = 0;
+
+                        break;
+                    }else if(v1 != v2 && v2 != 0) {
+                        break;
+                    }
+                }
+                
+                int u = y;
+                while(u != 0 && get(x, u - 1) == 0) {
+                    get(x, u - 1) = get(x, u);
+                    get(x, u) = 0;
+                    --u;
+                    
+                    moved = true;
+                }
+            }
+        }
+        return score;
+    }
+    
+    uint64 move_down(bool& moved) {
+        uint64 score = 0;
+        for(int x = 0; x < 4; ++x) {
+            for(int y = 3; y >= 0; --y) {
+                uint64 v1 = get(x, y);
+                if(v1 == 0) continue;
+                
+                for(int i = y - 1; i >= 0; --i) {
+                    uint64 v2 = get(x, i);
+                    if(v1 == v2) {
+                        score += v1 + v2;
+                        moved = true;
+                        
+                        get(x, y) += get(x, i);
+                        get(x, i) = 0;
+                        
+                        break;
+                    }else if(v1 != v2 && v2 != 0) {
+                        break;
+                    }
+                }
+                
+                int d = y;
+                while(d != 3 && get(x, d + 1) == 0) {
+                    get(x, d + 1) = get(x, d);
+                    get(x, d) = 0;
+                    ++d;
+                    
+                    moved = true;
+                }
+            }
+        }
+        return score;
+    }
+    
+    int get_move() {
+        for(int i = 0; i < 16; ++i) {
+            if(grid[i] == 0) return -1;
+        }
+        
+        bool mx = false;
+        bool my = false;
+        
+        for(int y = 0; y < 4; ++y) {
+            for(int x = 0; x < 4; ++x) {
+                uint64 v1 = get(x, y);
+                if(x != 3 && get(x + 1, y) == v1) {
+                    mx = true;
+                }
+                if(x != 0 && get(x - 1, y) == v1) {
+                    mx = true;
+                }
+                if(y != 3 && get(x, y + 1) == v1) {
+                    my = true;
+                }
+                if(y != 0 && get(x, y - 1) == v1) {
+                    my = true;
+                }
+            }
+        }
+        
+        if(mx && my)  {
+            return 2;
+        }
+        
+        if(mx) {
+            return 0;
+        }
+        
+        if(my) {
+            return 1;
+        }
+        
+        return 3;
+    }
+    
+    void print() {
+        for(int y = 0; y < 4; ++y) {
+            for(int x = 0; x < 4; ++x) {
+                std::cout << get(x, y) << " ";
+            }
+            
+            std::cout << std::endl;
+        }
+    }
+    
+    void run(ne_genome* gen) {
+        fitness = 0.0;
+        
+        reset();
+        gen->flush();
+        
+        ne_node** inputs = gen->inputs();
+        ne_node** outputs = gen->outputs();
+        
+        while(true) {
+            int m = get_move();
+            
+            //print();
+            //std::cout << std::endl;
+            
+            if(m == 2) {
+                break;
+            }else{
+                for(int i = 0; i < 16; ++i) {
+                    inputs[i]->value = grid[i];
+                }
+                
+                gen->compute();
+                
+                std::vector<int> choices(4);
+                for(int i = 0; i < 4; ++i) choices[i] = i;
+                
+                std::sort(choices.data(), choices.data() + 4, [=] (int a, int b) {
+                    return outputs[a]->value > outputs[b]->value;
+                });
+                
+                bool moved = false;
+                
+                if(m == -1) {
+                    
+                    uint64 i = 0;
+                    while(!moved) {
+                        int c = choices[i];
+                        if(c == 0) {
+                            fitness += move_up(moved);
+                            //std::cout << "up" << std::endl;
+                        }else if(c == 1) {
+                            fitness += move_down(moved);
+                            //std::cout << "down" << std::endl;
+                        }else if(c == 2) {
+                            fitness += move_left(moved);
+                            //std::cout << "left" << std::endl;
+                        }else{
+                            fitness += move_right(moved);
+                            //std::cout << "right" << std::endl;
+                        }
+                        ++i;
+                    }
+                    /*
+                    if(c == 0) {
+                        fitness += move_up();
+                        //std::cout << "up" << std::endl;
+                    }else if(c == 1) {
+                        fitness += move_down();
+                        //std::cout << "down" << std::endl;
+                    }else if(c == 2) {
+                        fitness += move_left();
+                        //std::cout << "left" << std::endl;
+                    }else{
+                        fitness += move_right();
+                        //std::cout << "right" << std::endl;
+                    }
+                     */
+                }else if(m == 0) {
+                    if(outputs[2]->value > outputs[3]->value) {
+                        move_left(moved);
+                        //std::cout << "f left" << std::endl;
+                    }else{
+                        move_right(moved);
+                        //std::cout << "f right" << std::endl;
+                    }
+                }else{
+                    if(outputs[0]->value > outputs[1]->value) {
+                        move_up(moved);
+                        //std::cout << "f up" << std::endl;
+                    }else{
+                        move_down(moved);
+                        //std::cout << "f down" << std::endl;
+                    }
+                }
+                
+                add2();
+            }
+        }
+        
+    }
+};
+
+typedef Game2048 obj_type;
 
 std::vector<obj_type> objs;
 

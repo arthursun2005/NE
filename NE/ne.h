@@ -34,7 +34,7 @@ struct ne_params
     float64 survive_thresh;
     
     float64 compat_gene;
-    float64 compat_function;
+    float64 compat_weight;
     float64 compat_thresh;
     
     uint64 node_ids;
@@ -56,7 +56,7 @@ struct ne_params
         survive_thresh = 0.4;
         
         compat_gene = 1.0;
-        compat_function = 2.0;
+        compat_weight = 2.0;
         compat_thresh = 3.0;
         
         node_ids = 0;
