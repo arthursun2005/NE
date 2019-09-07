@@ -21,48 +21,61 @@ public:
     
     ne_genome() {}
     
-    ne_genome(const ne_genome& genome);
+    ne_genome(const ne_genome& genome) {
+        *this = genome;
+    }
+    
     ne_genome& operator = (const ne_genome& genome);
     
-    inline ~ne_genome() {
+    ~ne_genome() {
         clear();
     }
     
-    void reset(const ne_params& params);
+    void reset(ne_params& params);
     
     inline ne_node** inputs() {
         return nodes.data();
     }
     
     inline ne_node** outputs() {
-        return nodes.data() + input_size;
+        return nodes.data() + nodes.size() - output_size;
     }
     
     void flush();
+    void step();
     
     void mutate_add_node(ne_params& params);
     void mutate_add_gene(ne_params& params);
-    void mutate_functions(ne_params& params);
-    
-    void step();
+    void mutate_weights(const ne_params& params);
     
     static inline bool sort(const ne_genome* a, const ne_genome* b) {
         return a->fitness > b->fitness;
     }
     
-    static void crossover(const ne_genome* a, const ne_genome* b, ne_genome* baby, ne_params& params);
-    
+    static ne_genome* crossover(const ne_genome* a, const ne_genome* b, ne_params& params);
     static float64 distance(const ne_genome* a, const ne_genome* b, const ne_params &params);
     
     float64 fitness;
-    uint64 activations;
-    
     bool eliminated;
     
     std::vector<ne_node*> nodes;
     std::vector<ne_gene*> genes;
     
 protected:
+    
+    inline void initialize() {
+        for(uint64 i = 0; i < input_size; ++i) {
+            ne_node node;
+            node.id = i;
+            find(&node);
+        }
+        
+        for(uint64 i = 0; i < output_size; ++i) {
+            ne_node node;
+            node.id = i + ne_max_nodes;
+            find(&node);
+        }
+    }
     
     inline void insert(ne_node* node) {
         insert_in_order(&nodes, node, ne_node::sort);
@@ -72,6 +85,8 @@ protected:
     inline void insert(ne_gene* gene) {
         insert_in_order(&genes, gene, ne_gene::sort);
         gene_set.insert(gene);
+        
+        gene->j->genes.push_back(gene);
     }
     
     inline ne_node* find(ne_node* node) {
@@ -79,6 +94,7 @@ protected:
         
         if(it == node_set.end()) {
             ne_node* new_node = new ne_node(*node);
+            new_node->genes.clear();
             insert(new_node);
             return new_node;
         }else{

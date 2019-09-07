@@ -10,31 +10,26 @@
 #define ne_h
 
 #include "common.h"
+#include <vector>
 #include <fstream>
 #include <unordered_set>
 
-#define ne_reduce(x) (0.5 + 0.5 * x / (1.0 + fabs(x)))
+#define ne_function(x) (1.0 / (1.0 + exp(-x)))
 
-#define ne_reverse(x) ((0.5 - x) / (fabs(x - 0.5) - 0.5))
+#define ne_max_nodes (1ull << 40)
 
-#define ne_accuracy 16
-
-#define ne_bytes (sizeof(float64) * ne_accuracy)
+#define ne_initial_genes 8
 
 struct ne_params
 {
-    float64 mutate_function_prob;
-    float64 mutate_function_rate;
-    float64 mutate_function_power;
+    float64 mutate_weight_prob;
+    float64 mutate_weight_power;
     
     float64 mutate_add_node_prob;
     float64 mutate_add_gene_prob;
     
-    float64 mutate_activation_prob;
-    
     float64 mutate_only_prob;
     float64 mate_only_prob;
-    float64 mate_avg_prob;
     
     float64 survive_thresh;
     
@@ -49,23 +44,19 @@ struct ne_params
     uint64 population;
     
     ne_params() {
-        mutate_function_prob = 0.75;
-        mutate_function_rate = 0.75;
-        mutate_function_power = 2.0;
+        mutate_weight_prob = 0.75;
+        mutate_weight_power = 2.0;
         
-        mutate_add_node_prob = 0.03;
-        mutate_add_gene_prob = 0.05;
-        
-        mutate_activation_prob = 0.5;
+        mutate_add_node_prob = 0.05;
+        mutate_add_gene_prob = 0.2;
         
         mutate_only_prob = 0.25;
         mate_only_prob = 0.25;
-        mate_avg_prob = 0.4;
         
         survive_thresh = 0.4;
         
         compat_gene = 1.0;
-        compat_function = 1.0;
+        compat_function = 2.0;
         compat_thresh = 3.0;
         
         node_ids = 0;
@@ -74,96 +65,17 @@ struct ne_params
     }
 };
 
-class ne_function
-{
-    
-protected:
-    
-    float64 values[ne_accuracy];
-    
-public:
-    
-    ne_function() {}
-    
-    ne_function(const ne_function& function) {
-        std::memcpy(values, function.values, ne_bytes);
-    }
-    
-    ne_function& operator = (const ne_function& function) {
-        std::memcpy(values, function.values, ne_bytes);
-        return *this;
-    }
-    
-    static void crossover_avg(const ne_function* a, const ne_function* b, ne_function* baby) {
-        for(uint64 i = 0; i < ne_accuracy; ++i) {
-            baby->values[i] = 0.5 * (a->values[i] + b->values[i]);
-        }
-    }
-    
-    static void crossover_rnd(const ne_function* a, const ne_function* b, ne_function* baby) {
-        for(uint64 i = 0; i < ne_accuracy; ++i) {
-            baby->values[i] = (rand32() & 1) ? a->values[i] : b->values[i];
-        }
-    }
-    
-    static float64 distance(const ne_function* a, const ne_function* b) {
-        float64 d = 0.0;
-        float64 q;
-        
-        for(uint64 i = 0; i < ne_accuracy; ++i) {
-            q = b->values[i] - a->values[i];
-            d += q * q;
-        }
-        
-        return sqrt(d / (float64) ne_accuracy);
-    }
-    
-    inline float64 operator () (float64 x) const {
-        x = ne_reduce(x) * ne_accuracy;
-        uint64 i = (uint64) x;
-        uint64 j = i + 1;
-        return values[i] * ((float64) j - x) + values[j] * (x - (float64) i);
-    }
-    
-    inline void randomlize() {
-        for(uint64 i = 0; i < ne_accuracy; ++i) {
-            values[i] = gaussian_random();
-        }
-    }
-    
-    inline void set_identity() {
-        for(uint64 i = 0; i < ne_accuracy; ++i) {
-            values[i] = ne_reverse((i + 0.5) / ((float64)ne_accuracy));
-        }
-    }
-    
-    inline void mutate(const ne_params& params) {
-        for(uint64 i = 0; i < ne_accuracy; ++i) {
-            values[i] += random(-params.mutate_function_power, params.mutate_function_power);
-        }
-    }
-    
-    inline void write(std::ofstream& os) const {
-        os.write((char*)values, ne_bytes);
-    }
-    
-    inline void read(std::ifstream& is) {
-        is.read((char*)values, ne_bytes);
-    }
-    
-};
+struct ne_gene;
 
 struct ne_node
 {
     float64 value;
     float64 sum;
     
-    bool computed;
     bool activated;
-    
     uint64 id;
     
-    ne_node(uint64 id) : id(id) {}
+    std::vector<ne_gene*> genes;
     
     static inline bool sort (const ne_node* a, const ne_node* b) {
         return a->id < b->id;
@@ -190,28 +102,18 @@ struct ne_gene
     ne_node* j;
     
     uint64 id;
-    
-    bool _enabled;
-    ne_function function;
+    float64 weight;
     
     static inline bool sort (const ne_gene* a, const ne_gene* b) {
         return a->id < b->id;
     }
     
     inline bool enabled() const {
-        return _enabled;
-    }
-    
-    inline bool disabled() const {
-        return !_enabled;
-    }
-    
-    inline void enable() {
-        _enabled = true;
+        return weight != 0.0;
     }
     
     inline void disable() {
-        _enabled = false;
+        weight = 0.0;
     }
 };
 

@@ -17,58 +17,28 @@ void ne_mutate(ne_genome* g, ne_params& params) {
         g->mutate_add_gene(params);
     }
     
-    if(random(0.0, 1.0) < params.mutate_function_prob) {
-        g->mutate_functions(params);
-    }
-    
-    if(random(0.0, 1.0) < params.mutate_activation_prob) {
-        //g->activations++;
+    if(random(0.0, 1.0) < params.mutate_weight_prob) {
+        g->mutate_weights(params);
     }
 }
 
-void ne_genome::reset(const ne_params &params) {
-    input_size = params.input_size;
+void ne_genome::reset(ne_params &params) {
+    input_size = params.input_size + 1;
     output_size = params.output_size;
     
     clear();
     
-    for(uint64 i = 0; i < input_size; ++i) {
-        ne_node* node = new ne_node(i);
-        insert(node);
-    }
+    initialize();
     
-    for(uint64 i = 0; i < output_size; ++i) {
-        ne_node* node = new ne_node(i + input_size);
-        insert(node);
+    for(uint64 i = 0; i < ne_initial_genes; ++i) {
+        mutate_add_gene(params);
     }
-    
-    for(uint64 i = 0; i < input_size; ++i) {
-        for(uint64 j = 0; j < output_size; ++j) {
-            uint64 q = input_size + j;
-            ne_gene* gene = new ne_gene();
-            
-            gene->i = nodes[i];
-            gene->j = nodes[q];
-            gene->function.randomlize();
-            gene->id = genes.size();
-            gene->enable();
-            
-            insert(gene);
-        }
-    }
-    
-    activations = 1;
-}
-
-ne_genome::ne_genome(const ne_genome& genome) {
-    *this = genome;
 }
 
 ne_genome& ne_genome::operator = (const ne_genome &genome) {
     input_size = genome.input_size;
     output_size = genome.output_size;
     fitness = genome.fitness;
-    activations = genome.activations;
     eliminated = genome.eliminated;
     
     clear();
@@ -77,8 +47,45 @@ ne_genome& ne_genome::operator = (const ne_genome &genome) {
         pass_down(new ne_gene(*gene));
     }
     
+    initialize();
+    
     return *this;
 }
+
+void ne_genome::flush() {
+    uint64 size = nodes.size();
+    
+    for(uint64 i = 0; i < input_size; ++i) {
+        nodes[i]->activated = true;
+    }
+    
+    nodes[input_size - 1]->value = 1.0;
+    
+    for(uint64 i = input_size; i < size; ++i) {
+        nodes[i]->activated = false;
+    }
+}
+
+void ne_genome::step() {
+    for(ne_node* node : nodes) {
+        node->activated = node->id < input_size;
+        node->sum = 0.0;
+        
+        for(ne_gene* gene : node->genes) {
+            if(gene->i->activated && gene->enabled()) {
+                node->activated = true;
+                node->sum += gene->weight * gene->i->value;
+            }
+        }
+    }
+    
+    for(ne_node* node : nodes) {
+        if(node->activated) {
+            node->value = ne_function(node->sum);
+        }
+    }
+}
+
 
 void ne_genome::mutate_add_node(ne_params &params) {
     uint64 gs = genes.size();
@@ -86,9 +93,11 @@ void ne_genome::mutate_add_node(ne_params &params) {
     if(gs != 0) {
         ne_gene* gene = genes[rand64() % gs];
         
-        if(gene->disabled()) return;
+        if(!gene->enabled()) return;
+        if(gene->i->id == input_size - 1) return;
         
-        ne_node* node = new ne_node(params.node_ids++);
+        ne_node* node = new ne_node();
+        node->id = params.node_ids++;
         insert(node);
         
         ne_gene* gene1 = new ne_gene();
@@ -96,8 +105,7 @@ void ne_genome::mutate_add_node(ne_params &params) {
         gene1->i = gene->i;
         gene1->j = node;
         gene1->id = params.gene_ids++;
-        gene1->function.set_identity();
-        gene1->enable();
+        gene1->weight = 1.0;
         
         insert(gene1);
         
@@ -106,8 +114,7 @@ void ne_genome::mutate_add_node(ne_params &params) {
         gene2->i = node;
         gene2->j = gene->j;
         gene2->id = params.gene_ids++;
-        gene2->function = gene->function;
-        gene2->enable();
+        gene2->weight = gene->weight;
         
         insert(gene2);
         
@@ -119,39 +126,35 @@ void ne_genome::mutate_add_gene(ne_params &params) {
     uint64 size = nodes.size();
     
     ne_gene q;
-    q.i = nodes[rand64() % size];
-    q.j = nodes[rand64() % size];
+    q.i = nodes[rand64() % (size - output_size)];
+    q.j = nodes[input_size + (rand64() % (size - input_size))];
     
     ne_gene_set::iterator it = gene_set.find(&q);
     if(it != gene_set.end()) {
-        if((*it)->disabled()) {
-            (*it)->function.randomlize();
+        if(!(*it)->enabled()) {
+            (*it)->weight = random(-2.0, 2.0);
         }
     }else{
         ne_gene* gene = new ne_gene(q);
         
         gene->id = params.gene_ids++;
-        gene->function.randomlize();
-        gene->enable();
+        gene->weight = random(-2.0, 2.0);
         
         insert(gene);
     }
 }
 
-void ne_genome::mutate_functions(ne_params &params) {
+void ne_genome::mutate_weights(const ne_params &params) {
     for(ne_gene* gene : genes) {
-        if(gene->enabled() && random(0.0, 1.0) < params.mutate_function_rate)
-            gene->function.mutate(params);
+        gene->weight += random(-params.mutate_weight_power, params.mutate_weight_power);
     }
 }
 
-void ne_genome::crossover(const ne_genome *a, const ne_genome *b, ne_genome* baby, ne_params& params) {
-    baby->clear();
+ne_genome* ne_genome::crossover(const ne_genome *a, const ne_genome *b, ne_params& params) {
+    ne_genome* baby = new ne_genome();
     
     baby->input_size = a->input_size;
     baby->output_size = a->output_size;
-    
-    baby->activations = std::min(a->activations, b->activations);
     
     std::vector<ne_gene*>::const_iterator itA, itB;
     
@@ -159,7 +162,6 @@ void ne_genome::crossover(const ne_genome *a, const ne_genome *b, ne_genome* bab
     itB = b->genes.begin();
     
     bool a_over_b = a->fitness > b->fitness;
-    bool mate_avg = random(0.0, 1.0) < params.mate_avg_prob;
     
     ne_gene gene;
     bool skip;
@@ -176,10 +178,7 @@ void ne_genome::crossover(const ne_genome *a, const ne_genome *b, ne_genome* bab
         }else if((*itA)->id == (*itB)->id) {
             gene = **itA;
             
-            if(mate_avg) ne_function::crossover_avg(&(*itA)->function, &(*itB)->function, &gene.function);
-            else ne_function::crossover_rnd(&(*itA)->function, &(*itB)->function, &gene.function);
-            
-            gene._enabled = (rand32() & 1) ? (*itA)->_enabled : (*itB)->_enabled;
+            gene.weight = 0.5 * ((*itA)->weight + (*itB)->weight);
             
             skip = false;
             
@@ -202,6 +201,10 @@ void ne_genome::crossover(const ne_genome *a, const ne_genome *b, ne_genome* bab
             baby->pass_down(new ne_gene(gene));
         }
     }
+    
+    baby->initialize();
+    
+    return baby;
 }
 
 float64 ne_genome::distance(const ne_genome *a, const ne_genome *b, const ne_params &params) {
@@ -226,7 +229,7 @@ float64 ne_genome::distance(const ne_genome *a, const ne_genome *b, const ne_par
             ++miss;
             ++itA;
         }else if((*itA)->id == (*itB)->id) {
-            d += ne_function::distance(&(*itA)->function, &(*itB)->function);
+            d += fabs((*itB)->weight - (*itA)->weight);
             ++align;
             ++itA;
             ++itB;
@@ -239,51 +242,7 @@ float64 ne_genome::distance(const ne_genome *a, const ne_genome *b, const ne_par
         }
     }
     
-    return miss * params.compat_gene + sqrt(d / (float64) align) * params.compat_function;
-}
-
-void ne_genome::flush() {
-    uint64 size = nodes.size();
-    
-    for(uint64 i = 0; i < input_size; ++i) {
-        nodes[i]->activated = true;
-    }
-    
-    for(uint64 i = input_size; i < size; ++i) {
-        nodes[i]->activated = false;
-    }
-}
-
-void ne_genome::step() {
-    uint64 n = 0;
-    
-    while(n != activations) {
-        for(ne_node* node : nodes) {
-            node->computed = false;
-            node->sum = 0.0;
-        }
-        
-        for(ne_gene* gene : genes) {
-            if(gene->i->activated && gene->enabled()) {
-                gene->j->computed = true;
-                gene->j->sum += gene->function(gene->i->value);
-            }
-        }
-        
-        for(ne_node* node : nodes) {
-            node->activated = node->computed;
-            node->value = node->sum;
-        }
-        
-        ++n;
-    }
-}
-
-ne_population::ne_population(const ne_params& params) : params(params) {
-}
-
-ne_population::ne_population(const ne_population& population) {
-    *this = population;
+    return miss * params.compat_gene + d / (float64) align * params.compat_function;
 }
 
 ne_population& ne_population::operator = (const ne_population& population) {
@@ -312,8 +271,7 @@ void ne_population::initialize() {
         add(genomes[i]);
     }
     
-    params.node_ids = params.input_size + params.output_size;
-    params.gene_ids = params.input_size * params.output_size;
+    params.node_ids = params.input_size + 1;
 }
 
 void ne_population::add(ne_genome *g) {
@@ -347,10 +305,8 @@ ne_genome* ne_population::breed(ne_species *sp) {
         
         ne_mutate(baby, params);
     }else{
-        baby = new ne_genome();
-        
         uint64 i2 = random(0, sp->parents);
-        ne_genome::crossover(sp->genomes[i1], sp->genomes[i2], baby, params);
+        baby = ne_genome::crossover(sp->genomes[i1], sp->genomes[i2], params);
         
         if(random(0.0, 1.0) >= params.mate_only_prob) {
             ne_mutate(baby, params);
@@ -364,9 +320,7 @@ ne_genome* ne_population::breed(ne_species *sp) {
 
 ne_genome* ne_population::select() {
     uint64 offsprings = 0;
-    
     float64 total_fitness = 0.0;
-    
     ne_genome* best = genomes[0];
     
     for(ne_species* sp : species) {
@@ -425,12 +379,8 @@ void ne_population::reproduce() {
             g->eliminated = true;
         }
         
-        if(sp->offsprings != 0) {
-            for(uint64 n = 1; n != sp->offsprings; ++n) {
-                babies.push_back(breed(sp));
-            }
-            
-            sp->genomes.front()->eliminated = false;
+        for(uint64 n = 0; n != sp->offsprings; ++n) {
+            babies.push_back(breed(sp));
         }
     }
     

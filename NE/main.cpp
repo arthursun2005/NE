@@ -36,7 +36,7 @@ struct Pendulum
     float64 f;
     float64 b;
     
-    float64 xt = 2.4;
+    float64 xt = 10.0;
     
     float64 fitness;
     
@@ -51,14 +51,12 @@ struct Pendulum
     }
     
     void reset() {
-        float64 stdev = 0.1;
+        float64 range = 1.0;
         
-        x = gaussian_random() * stdev;
-        vx = gaussian_random() * stdev;
-        a = gaussian_random() * stdev + M_PI;
-        va = gaussian_random() * stdev;
-        
-        x = random(-0.75, 0.75) * xt;
+        x = random(-range, range);
+        vx = random(-range, range);
+        a = random(-range, range) + M_PI;
+        va = random(-range, range);
     }
     
     void run(ne_genome* gen) {
@@ -86,9 +84,7 @@ struct Pendulum
                 
                 gen->step();
                 
-                action = outputs[0]->value;
-                
-                action = action < -1.0 ? -1.0 : (action > 1.0 ? 1.0 : action);
+                action = outputs[0]->value * 2.0 - 1.0;
                 
                 action *= f;
             }
@@ -109,10 +105,45 @@ struct Pendulum
             if(x < -xt || x > xt)
                 break;
             
-            fitness += 0.5 * (cos(a) + 1.0);
+            float64 f1 = std::max(cos(a), 0.0);
+            float64 f2 = (xt - fabs(x)) / xt;
+            
+            fitness += f1 + (f1 * f2);
         }
     }
     
+};
+
+
+struct XOR
+{
+    static const uint64 input_size = 2;
+    static const uint64 output_size = 1;
+    
+    float64 fitness;
+    
+    void run(ne_genome* gen) {
+        fitness = 0.0;
+        
+        ne_node** inputs = gen->inputs();
+        ne_node** outputs = gen->outputs();
+        
+        for(int a = 0; a < 2; ++a) {
+            for(int b = 0; b < 2; ++b) {
+                int c = a ^ b;
+                
+                inputs[0]->value = a;
+                inputs[1]->value = b;
+                
+                gen->step();
+                
+                double d = outputs[0]->value - c;
+                fitness += 1.0 - d * d;
+            }
+        }
+        
+        fitness *= 0.25;
+    }
 };
 
 typedef Pendulum obj_type;

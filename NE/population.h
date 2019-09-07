@@ -30,9 +30,12 @@ class ne_population
     
 public:
     
-    ne_population(const ne_params& params);
+    ne_population(const ne_params& params) : params(params) {}
     
-    ne_population(const ne_population& population);
+    ne_population(const ne_population& population) {
+        *this = population;
+    }
+    
     ne_population& operator = (const ne_population& population);
     
     ~ne_population() {
@@ -57,13 +60,12 @@ protected:
         for(ne_species* sp : species) {
             delete sp;
         }
-        
-        species.clear();
-        
+                
         for(ne_genome* g : genomes) {
             delete g;
         }
         
+        species.clear();
         genomes.clear();
     }
     
