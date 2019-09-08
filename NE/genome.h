@@ -12,8 +12,6 @@
 #include "ne.h"
 #include <vector>
 
-class ne_population;
-
 class ne_genome
 {
     

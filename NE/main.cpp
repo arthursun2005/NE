@@ -20,7 +20,7 @@ ne_params params;
 
 struct Pendulum
 {
-    static const uint64 input_size = 5;
+    static const uint64 input_size = 4;
     static const uint64 output_size = 1;
     
     float64 x;
@@ -59,12 +59,11 @@ struct Pendulum
         va = random(-range, range);
     }
     
-    void run(ne_genome* gen) {
+    void run(ne_genome* gen, bool p) {
         fitness = 0.0;
         
-        gen->flush();
-        
         reset();
+        gen->flush();
         
         ne_node** inputs = gen->inputs();
         ne_node** outputs = gen->outputs();
@@ -76,11 +75,12 @@ struct Pendulum
             double action = 0.0;
             
             if((i % 2) == 0) {
-                inputs[0]->value = vx;
-                inputs[1]->value = x;
-                inputs[2]->value = c;
-                inputs[3]->value = s;
-                inputs[4]->value = va;
+                //inputs[0]->value = vx;
+                inputs[0]->value = x;
+                inputs[1]->value = c;
+                inputs[2]->value = s;
+                inputs[3]->value = va;
+                
                 
                 gen->compute();
                 
@@ -109,6 +109,10 @@ struct Pendulum
             float64 f2 = (xt - fabs(x)) / xt;
             
             fitness += f1 + (f1 * f2);
+            
+            if(p) {
+                std::cout << x << ", " << a << ", " << std::endl;
+            }
         }
     }
     
@@ -122,7 +126,7 @@ struct XOR
     
     float64 fitness;
     
-    void run(ne_genome* gen) {
+    void run(ne_genome* gen, bool p) {
         fitness = 0.0;
         
         ne_node** inputs = gen->inputs();
@@ -135,6 +139,7 @@ struct XOR
                 inputs[0]->value = a;
                 inputs[1]->value = b;
                 
+                gen->flush();
                 gen->compute();
                 
                 double d = outputs[0]->value - c;
@@ -324,11 +329,10 @@ struct Game2048
         
         for(int y = 0; y < 4; ++y) {
             for(int x = 0; x < 4; ++x) {
-                uint64 v1 = get(x, y);
-                if(x != 3 && get(x + 1, y) == v1) {
+                if(x != 3 && get(x + 1, y) == get(x, y)) {
                     return 0;
                 }
-                if(y != 3 && get(x, y + 1) == v1) {
+                if(y != 3 && get(x, y + 1) == get(x, y)) {
                     return 0;
                 }
             }
@@ -347,11 +351,10 @@ struct Game2048
         }
     }
     
-    void run(ne_genome* gen) {
+    void run(ne_genome* gen, bool p) {
         fitness = 0.0;
         
         reset();
-        
         
         ne_node** inputs = gen->inputs();
         ne_node** outputs = gen->outputs();
@@ -359,14 +362,16 @@ struct Game2048
         while(true) {
             int m = get_move();
             
-            //print();
-            //std::cout << std::endl;
+            if(p) {
+                print();
+                std::cout << std::endl;
+            }
             
             if(m == 1) {
                 break;
             }else{
                 for(int i = 0; i < 16; ++i) {
-                    inputs[i]->value = grid[i];
+                    inputs[i]->value = log2(grid[i] + 1.0);
                 }
                 
                 gen->flush();
@@ -386,16 +391,16 @@ struct Game2048
                     int c = choices[i];
                     if(c == 0) {
                         fitness += move_up(moved);
-                        //std::cout << "up" << std::endl;
+                        if(p) std::cout << "up" << std::endl;
                     }else if(c == 1) {
                         fitness += move_down(moved);
-                        //std::cout << "down" << std::endl;
+                        if(p) std::cout << "down" << std::endl;
                     }else if(c == 2) {
                         fitness += move_left(moved);
-                        //std::cout << "left" << std::endl;
+                        if(p) std::cout << "left" << std::endl;
                     }else{
                         fitness += move_right(moved);
-                        //std::cout << "right" << std::endl;
+                        if(p) std::cout << "right" << std::endl;
                     }
                     ++i;
                 }
@@ -403,6 +408,7 @@ struct Game2048
                 add2();
             }
         }
+        
         
     }
 };
@@ -435,7 +441,7 @@ int main(int argc, const char * argv[]) {
     
     for(int n = 0; n < gens; ++n) {
         for(int i = 0; i < params.population; ++i) {
-            objs[i].run(population->genomes[i]);
+            objs[i].run(population->genomes[i], false);
             
             population->genomes[i]->fitness = objs[i].fitness;
         }

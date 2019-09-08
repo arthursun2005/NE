@@ -53,10 +53,6 @@ ne_genome& ne_genome::operator = (const ne_genome &genome) {
 void ne_genome::flush() {
     uint64 size = nodes.size();
     
-    for(uint64 i = 0; i < input_size; ++i) {
-        nodes[i]->activated = true;
-    }
-    
     nodes[input_size - 1]->value = 1.0;
     
     for(uint64 i = input_size; i < size; ++i) {
@@ -83,7 +79,6 @@ void ne_genome::compute() {
         }
     }
 }
-
 
 void ne_genome::mutate_add_node(ne_params &params) {
     uint64 gs = genes.size();
