@@ -48,8 +48,6 @@ public:
     void reproduce();
     
     ne_params params;
-        
-    uint64 parents;
     
     std::vector<ne_species*> species;
     std::vector<ne_genome*> genomes;

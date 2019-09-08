@@ -83,7 +83,6 @@ struct Pendulum
                 //inputs[3]->value = s;
                 //inputs[3]->value = va;
                 
-                
                 gen->compute();
                 
                 action = outputs[0]->value * 2.0 - 1.0;
@@ -428,8 +427,8 @@ void initialize() {
 
 int main(int argc, const char * argv[]) {
     if(argc == 1) {
-        std::cout << "enter the number of generations" << std::endl;
-        return 1;
+        gens = 64;
+        std::cout << "default number of generations: " << gens << std::endl;
     }else{
         gens = std::stoi(argv[1]);
     }

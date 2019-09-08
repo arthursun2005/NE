@@ -16,7 +16,7 @@
 
 #define ne_function(x) (1.0 / (1.0 + exp(-x)))
 
-#define ne_max_nodes (1ull << 40)
+#define ne_max_nodes (1ull << 60)
 
 struct ne_params
 {
@@ -45,8 +45,8 @@ struct ne_params
         mutate_weight_prob = 0.8;
         mutate_weight_power = 2.0;
         
-        mutate_add_node_prob = 0.02;
-        mutate_add_gene_prob = 0.1;
+        mutate_add_node_prob = 0.05;
+        mutate_add_gene_prob = 0.2;
         
         mutate_only_prob = 0.25;
         mate_only_prob = 0.25;
@@ -101,6 +101,10 @@ struct ne_gene
     
     uint64 id;
     float64 weight;
+    
+    ne_gene() {}
+    
+    ne_gene(ne_node* i, ne_node* j) : i(i), j(j) {}
     
     static inline bool sort (const ne_gene* a, const ne_gene* b) {
         return a->id < b->id;

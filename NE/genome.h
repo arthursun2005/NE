@@ -29,7 +29,7 @@ public:
         clear();
     }
     
-    void reset(ne_params& params) {
+    inline void reset(ne_params& params) {
         input_size = params.input_size + 1;
         output_size = params.output_size;
         clear();
@@ -45,7 +45,7 @@ public:
         return nodes.data() + nodes.size() - output_size;
     }
     
-    void flush() {
+    inline void flush() {
         uint64 size = nodes.size();
         
         for(uint64 i = 0; i < input_size; ++i) {
@@ -73,7 +73,6 @@ public:
     static float64 distance(const ne_genome* a, const ne_genome* b, const ne_params &params);
     
     float64 fitness;
-    bool eliminated;
     
     std::vector<ne_node*> nodes;
     std::vector<ne_gene*> genes;

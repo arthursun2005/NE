@@ -12,7 +12,6 @@ ne_genome& ne_genome::operator = (const ne_genome &genome) {
     input_size = genome.input_size;
     output_size = genome.output_size;
     fitness = genome.fitness;
-    eliminated = genome.eliminated;
     
     clear();
     
@@ -41,7 +40,7 @@ void ne_genome::compute() {
     }
     
     for(ne_node* node : nodes) {
-        if(node->activated) {
+        if(node->activated && node->id >= input_size) {
             node->value = ne_function(node->sum);
         }
     }
@@ -53,26 +52,21 @@ void ne_genome::mutate_add_node(ne_params &params) {
     if(gs != 0) {
         ne_gene* gene = genes[rand64() % gs];
         
-        if(!gene->enabled()) return;
-        if(gene->i->id == input_size - 1) return;
+        if(!gene->enabled() || gene->i->id == input_size - 1) return;
         
         ne_node* node = new ne_node();
         node->id = params.node_ids++;
         insert(node);
         
-        ne_gene* gene1 = new ne_gene();
+        ne_gene* gene1 = new ne_gene(gene->i, node);
         
-        gene1->i = gene->i;
-        gene1->j = node;
         gene1->id = params.gene_ids++;
         gene1->weight = 1.0;
         
         insert(gene1);
         
-        ne_gene* gene2 = new ne_gene();
+        ne_gene* gene2 = new ne_gene(node, gene->j);
         
-        gene2->i = node;
-        gene2->j = gene->j;
         gene2->id = params.gene_ids++;
         gene2->weight = gene->weight;
         
@@ -85,9 +79,7 @@ void ne_genome::mutate_add_node(ne_params &params) {
 void ne_genome::mutate_add_gene(ne_params &params) {
     uint64 size = nodes.size();
     
-    ne_gene q;
-    q.i = nodes[rand64() % size];
-    q.j = nodes[input_size + (rand64() % (size - input_size))];
+    ne_gene q(nodes[rand64() % size], nodes[input_size + (rand64() % (size - input_size))]);
     
     ne_gene_set::iterator it = gene_set.find(&q);
     if(it != gene_set.end()) {
@@ -272,9 +264,7 @@ ne_genome* ne_population::breed(ne_species *sp) {
             ne_mutate(baby, params);
         }
     }
-    
-    baby->eliminated = false;
-    
+        
     return baby;
 }
 
@@ -335,45 +325,16 @@ void ne_population::reproduce() {
     std::vector<ne_genome*> babies;
     
     for(ne_species* sp : species) {
-        for(ne_genome* g : sp->genomes) {
-            g->eliminated = true;
-        }
-        
         for(uint64 n = 0; n != sp->offsprings; ++n) {
             babies.push_back(breed(sp));
         }
     }
     
-    for(ne_genome* g : babies) {
+    clear();
+    
+    genomes = babies;
+    
+    for(ne_genome* g : genomes) {
         add(g);
-        genomes.push_back(g);
-    }
-    
-    std::vector<ne_genome*>::iterator begin, end;
-    std::vector<ne_species*>::iterator p = species.begin(), q = species.end();
-    
-    while(q-- != p) {
-        begin = (*q)->genomes.begin();
-        end = (*q)->genomes.end();
-        
-        while(end-- != begin) {
-            if((*end)->eliminated)
-                (*q)->genomes.erase(end);
-        }
-        
-        if((*q)->genomes.empty()) {
-            delete *q;
-            species.erase(q);
-        }
-    }
-    
-    begin = genomes.begin();
-    end = genomes.end();
-    
-    while(end-- != begin) {
-        if((*end)->eliminated) {
-            delete *end;
-            genomes.erase(end);
-        }
     }
 }
