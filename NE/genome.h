@@ -29,7 +29,13 @@ public:
         clear();
     }
     
-    void reset(ne_params& params);
+    void reset(ne_params& params) {
+        input_size = params.input_size + 1;
+        output_size = params.output_size;
+        clear();
+        initialize();
+        mutate_add_gene(params);
+    }
     
     inline ne_node** inputs() {
         return nodes.data();
@@ -39,7 +45,20 @@ public:
         return nodes.data() + nodes.size() - output_size;
     }
     
-    void flush();
+    void flush() {
+        uint64 size = nodes.size();
+        
+        for(uint64 i = 0; i < input_size; ++i) {
+            nodes[i]->activated = true;
+        }
+        
+        nodes[input_size - 1]->value = 1.0;
+        
+        for(uint64 i = input_size; i < size; ++i) {
+            nodes[i]->activated = false;
+        }
+    }
+    
     void compute();
     
     void mutate_add_node(ne_params& params);
@@ -129,6 +148,18 @@ protected:
     
 };
 
-void ne_mutate(ne_genome* g, ne_params& params);
+inline void ne_mutate(ne_genome* g, ne_params& params) {
+    if(random(0.0, 1.0) < params.mutate_add_node_prob) {
+        g->mutate_add_node(params);
+    }
+    
+    if(random(0.0, 1.0) < params.mutate_add_gene_prob) {
+        g->mutate_add_gene(params);
+    }
+    
+    if(random(0.0, 1.0) < params.mutate_weight_prob) {
+        g->mutate_weights(params);
+    }
+}
 
 #endif /* genome_h */

@@ -45,8 +45,8 @@ struct ne_params
         mutate_weight_prob = 0.8;
         mutate_weight_power = 2.0;
         
-        mutate_add_node_prob = 0.05;
-        mutate_add_gene_prob = 0.2;
+        mutate_add_node_prob = 0.02;
+        mutate_add_gene_prob = 0.1;
         
         mutate_only_prob = 0.25;
         mate_only_prob = 0.25;

@@ -20,7 +20,7 @@ ne_params params;
 
 struct Pendulum
 {
-    static const uint64 input_size = 4;
+    static const uint64 input_size = 2;
     static const uint64 output_size = 1;
     
     float64 x;
@@ -77,9 +77,11 @@ struct Pendulum
             if((i % 2) == 0) {
                 //inputs[0]->value = vx;
                 inputs[0]->value = x;
-                inputs[1]->value = c;
-                inputs[2]->value = s;
-                inputs[3]->value = va;
+                inputs[1]->value = a;
+                //inputs[2]->value = vx;
+                //inputs[3]->value = va;
+                //inputs[3]->value = s;
+                //inputs[3]->value = va;
                 
                 
                 gen->compute();
@@ -90,11 +92,10 @@ struct Pendulum
             }
             
             double va2 = va * va;
-            double sc = s * c;
             double c2 = c * c;
-            
-            double vvx = (-2.0 * m_p * l * va2 * s + 3.0 * m_p * g * sc + 4.0 * action - 4.0 * b * vx) / (4.0 * m - 3.0 * m_p * c2);
-            double vva = (-3.0 * m_p * l * va2 * sc + 6.0 * m * g * s + 6.0 * (action - b * vx) * c) / (4.0 * l * m - 3.0 * m_p * l * c2);
+
+            double vva = (g * m * s + c * (action - m_p * l * va2 * s - b * vx))/(l * (m - m_p * c2));
+            double vvx = (action + m_p * l * (vva * c - va2 * s) - b * vx) / m;
             
             vx = vx + vvx * time_step;
             va = va + vva * time_step;
@@ -413,7 +414,7 @@ struct Game2048
     }
 };
 
-typedef Game2048 obj_type;
+typedef Pendulum obj_type;
 
 std::vector<obj_type> objs;
 
@@ -442,7 +443,6 @@ int main(int argc, const char * argv[]) {
     for(int n = 0; n < gens; ++n) {
         for(int i = 0; i < params.population; ++i) {
             objs[i].run(population->genomes[i], false);
-            
             population->genomes[i]->fitness = objs[i].fitness;
         }
         
@@ -455,6 +455,19 @@ int main(int argc, const char * argv[]) {
         }
         
         std::cout << "fitness: " << best->fitness << std::endl;
+        
+        if(n == gens - 1) {
+            objs[0].run(best, true);
+            std::cout << "fitness: " << objs[0].fitness << std::endl;
+            
+            for(ne_node* node : best->nodes) {
+                std::cout << "node: " << node->id << std::endl;
+                for(ne_gene* gene : node->genes) {
+                    std::cout << "gene: " << gene->id << " " << gene->weight << " " << gene->i->id << std::endl;
+                }
+                std::cout << std::endl;
+            }
+        }
         
         highs.push_back(best->fitness);
         

@@ -8,31 +8,6 @@
 
 #include "population.h"
 
-void ne_mutate(ne_genome* g, ne_params& params) {
-    if(random(0.0, 1.0) < params.mutate_add_node_prob) {
-        g->mutate_add_node(params);
-    }
-    
-    if(random(0.0, 1.0) < params.mutate_add_gene_prob) {
-        g->mutate_add_gene(params);
-    }
-    
-    if(random(0.0, 1.0) < params.mutate_weight_prob) {
-        g->mutate_weights(params);
-    }
-}
-
-void ne_genome::reset(ne_params &params) {
-    input_size = params.input_size + 1;
-    output_size = params.output_size;
-    
-    clear();
-    
-    initialize();
-    
-    mutate_add_gene(params);
-}
-
 ne_genome& ne_genome::operator = (const ne_genome &genome) {
     input_size = genome.input_size;
     output_size = genome.output_size;
@@ -50,19 +25,11 @@ ne_genome& ne_genome::operator = (const ne_genome &genome) {
     return *this;
 }
 
-void ne_genome::flush() {
-    uint64 size = nodes.size();
-    
-    nodes[input_size - 1]->value = 1.0;
-    
-    for(uint64 i = input_size; i < size; ++i) {
-        nodes[i]->activated = false;
-    }
-}
-
 void ne_genome::compute() {
     for(ne_node* node : nodes) {
-        node->activated = node->id < input_size;
+        if(node->id < input_size) continue;
+        
+        node->activated = false;
         node->sum = 0.0;
         
         for(ne_gene* gene : node->genes) {
@@ -119,7 +86,7 @@ void ne_genome::mutate_add_gene(ne_params &params) {
     uint64 size = nodes.size();
     
     ne_gene q;
-    q.i = nodes[rand64() % (size - output_size)];
+    q.i = nodes[rand64() % size];
     q.j = nodes[input_size + (rand64() % (size - input_size))];
     
     ne_gene_set::iterator it = gene_set.find(&q);
@@ -372,12 +339,8 @@ void ne_population::reproduce() {
             g->eliminated = true;
         }
         
-        if(sp->offsprings != 0) {
-            for(uint64 n = 1; n != sp->offsprings; ++n) {
-                babies.push_back(breed(sp));
-            }
-            
-            sp->genomes.front()->eliminated = false;
+        for(uint64 n = 0; n != sp->offsprings; ++n) {
+            babies.push_back(breed(sp));
         }
     }
     
