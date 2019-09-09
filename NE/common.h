@@ -12,6 +12,7 @@
 #include <cmath>
 #include <functional>
 #include <cfloat>
+#include <random>
 #include <iostream>
 
 typedef float float32;
@@ -22,16 +23,18 @@ typedef unsigned short uint16;
 typedef unsigned int uint32;
 typedef unsigned long uint64;
 
-inline uint32 rand32() {
-    return arc4random();
-}
+static std::mt19937_64 ne_generator = std::mt19937_64(std::chrono::high_resolution_clock::now().time_since_epoch().count());
 
 inline uint64 rand64() {
-    return rand32() | ((uint64)(rand32()) << 32);
+    return ne_generator();
 }
 
 inline float64 random(float64 a, float64 b) {
-    return (rand64() / (float64) (0xffffffffffffffff)) * (b - a) + a;
+    return std::uniform_real_distribution<float64>(a, b)(ne_generator);
+}
+
+inline float64 gaussian_random(float64 a, float64 b) {
+    return std::normal_distribution<float64>(a, b)(ne_generator);
 }
 
 inline uint64 random(uint64 a, uint64 b) {

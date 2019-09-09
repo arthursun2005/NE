@@ -20,14 +20,13 @@
 
 struct ne_params
 {
-    float64 mutate_weight_prob;
-    float64 mutate_weight_power;
+    float64 mutate_weights_prob;
+    float64 mutate_weights_power;
     
     float64 mutate_add_node_prob;
     float64 mutate_add_gene_prob;
     
     float64 mutate_only_prob;
-    float64 mate_only_prob;
     
     float64 survive_thresh;
     
@@ -42,14 +41,13 @@ struct ne_params
     uint64 population;
     
     ne_params() {
-        mutate_weight_prob = 0.8;
-        mutate_weight_power = 2.0;
+        mutate_weights_prob = 0.8;
+        mutate_weights_power = 2.0;
         
-        mutate_add_node_prob = 0.05;
-        mutate_add_gene_prob = 0.2;
+        mutate_add_node_prob = 0.01;
+        mutate_add_gene_prob = 0.1;
         
         mutate_only_prob = 0.25;
-        mate_only_prob = 0.25;
         
         survive_thresh = 0.4;
         

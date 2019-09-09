@@ -20,7 +20,7 @@ ne_params params;
 
 struct Pendulum
 {
-    static const uint64 input_size = 2;
+    static const uint64 input_size = 3;
     static const uint64 output_size = 1;
     
     float64 x;
@@ -76,8 +76,9 @@ struct Pendulum
             
             if((i % 2) == 0) {
                 //inputs[0]->value = vx;
-                inputs[0]->value = x;
-                inputs[1]->value = a;
+                inputs[0]->value = 1.0;
+                inputs[1]->value = x;
+                inputs[2]->value = a;
                 //inputs[2]->value = vx;
                 //inputs[3]->value = va;
                 //inputs[3]->value = s;
@@ -121,7 +122,7 @@ struct Pendulum
 
 struct XOR
 {
-    static const uint64 input_size = 2;
+    static const uint64 input_size = 3;
     static const uint64 output_size = 1;
     
     float64 fitness;
@@ -136,8 +137,9 @@ struct XOR
             for(int b = 0; b < 2; ++b) {
                 int c = a ^ b;
                 
-                inputs[0]->value = a;
-                inputs[1]->value = b;
+                inputs[0]->value = 1.0;
+                inputs[1]->value = a;
+                inputs[2]->value = b;
                 
                 gen->flush();
                 gen->compute();
@@ -153,7 +155,7 @@ struct XOR
 
 struct Game2048
 {
-    static const uint64 input_size = 16;
+    static const uint64 input_size = 17;
     static const uint64 output_size = 4;
     
     float64 fitness;
@@ -370,8 +372,9 @@ struct Game2048
             if(m == 1) {
                 break;
             }else{
+                inputs[0]->value = 1.0;
                 for(int i = 0; i < 16; ++i) {
-                    inputs[i]->value = log2(grid[i] + 1.0);
+                    inputs[i + 1]->value = log2(grid[i] + 1.0);
                 }
                 
                 gen->flush();
@@ -480,6 +483,6 @@ int main(int argc, const char * argv[]) {
     }
     
     delete population;
-    
+        
     return 0;
 }

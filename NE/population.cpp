@@ -52,7 +52,7 @@ void ne_genome::mutate_add_node(ne_params &params) {
     if(gs != 0) {
         ne_gene* gene = genes[rand64() % gs];
         
-        if(!gene->enabled() || gene->i->id == input_size - 1) return;
+        if(!gene->enabled() || gene->i->id == 0) return;
         
         ne_node* node = new ne_node();
         node->id = params.node_ids++;
@@ -98,8 +98,9 @@ void ne_genome::mutate_add_gene(ne_params &params) {
 
 void ne_genome::mutate_weights(const ne_params &params) {
     for(ne_gene* gene : genes) {
-        if(gene->enabled())
-            gene->weight += random(-params.mutate_weight_power, params.mutate_weight_power);
+        if(gene->enabled()) {
+            gene->weight += random(-params.mutate_weights_power, params.mutate_weights_power);
+        }
     }
 }
 
@@ -195,7 +196,7 @@ float64 ne_genome::distance(const ne_genome *a, const ne_genome *b, const ne_par
         }
     }
     
-    return miss * params.compat_gene + d * params.compat_weight / (float64) align;
+    return miss * params.compat_gene + (align == 0 ? 0.0 : (d * params.compat_weight / (float64) align));
 }
 
 ne_population& ne_population::operator = (const ne_population& population) {
@@ -254,17 +255,13 @@ ne_genome* ne_population::breed(ne_species *sp) {
     
     if(random(0.0, 1.0) < params.mutate_only_prob || sp->parents == 1) {
         baby = new ne_genome(*sp->genomes[i1]);
-        
-        ne_mutate(baby, params);
     }else{
         uint64 i2 = random(0, sp->parents);
         baby = ne_genome::crossover(sp->genomes[i1], sp->genomes[i2], params);
-        
-        if(random(0.0, 1.0) >= params.mate_only_prob) {
-            ne_mutate(baby, params);
-        }
     }
-        
+    
+    ne_mutate(baby, params);
+    
     return baby;
 }
 
@@ -283,7 +280,8 @@ ne_genome* ne_population::select() {
     for(ne_species* sp : species) {
         uint64 spsize = sp->genomes.size();
         
-        sp->parents = (uint64)ceil(spsize * params.survive_thresh);
+        sp->parents = (uint64)round(spsize * params.survive_thresh);
+        if(sp->parents == 0) sp->parents = 1;
         
         sp->avg_fitness = 0.0;
         
@@ -302,7 +300,7 @@ ne_genome* ne_population::select() {
     
     if(total_fitness != 0.0) {
         for(ne_species* sp : species) {
-            sp->offsprings = (uint64)(params.population * (sp->avg_fitness / total_fitness));
+            sp->offsprings = (uint64)floor(params.population * (sp->avg_fitness / total_fitness));
             offsprings += sp->offsprings;
         }
         

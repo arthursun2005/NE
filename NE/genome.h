@@ -30,7 +30,7 @@ public:
     }
     
     inline void reset(ne_params& params) {
-        input_size = params.input_size + 1;
+        input_size = params.input_size;
         output_size = params.output_size;
         clear();
         initialize();
@@ -51,8 +51,6 @@ public:
         for(uint64 i = 0; i < input_size; ++i) {
             nodes[i]->activated = true;
         }
-        
-        nodes[input_size - 1]->value = 1.0;
         
         for(uint64 i = input_size; i < size; ++i) {
             nodes[i]->activated = false;
@@ -113,9 +111,9 @@ protected:
             new_node->genes.clear();
             insert(new_node);
             return new_node;
-        }else{
-            return *it;
         }
+        
+        return *it;
     }
     
     inline void pass_down(ne_gene* gene) {
@@ -156,7 +154,7 @@ inline void ne_mutate(ne_genome* g, ne_params& params) {
         g->mutate_add_gene(params);
     }
     
-    if(random(0.0, 1.0) < params.mutate_weight_prob) {
+    if(random(0.0, 1.0) < params.mutate_weights_prob) {
         g->mutate_weights(params);
     }
 }
