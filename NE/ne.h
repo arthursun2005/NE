@@ -12,11 +12,26 @@
 #include "common.h"
 #include <vector>
 #include <fstream>
+#include <random>
 #include <unordered_set>
 
 #define ne_function(x) (1.0 / (1.0 + exp(-x)))
 
-#define ne_max_nodes (1ull << 60)
+#define ne_max_nodes (1ull << 63)
+
+static std::mt19937_64 ne_generator = std::mt19937_64(std::chrono::high_resolution_clock::now().time_since_epoch().count());
+
+inline uint64 ne_random() {
+    return ne_generator();
+}
+
+inline float64 ne_random(float64 a, float64 b) {
+    return std::uniform_real_distribution<float64>(a, b)(ne_generator);
+}
+
+inline uint64 ne_random(uint64 a, uint64 b) {
+    return std::uniform_int_distribution<uint64>(a, b)(ne_generator);
+}
 
 struct ne_params
 {
@@ -117,10 +132,14 @@ struct ne_gene
     }
 };
 
+inline size_t ne_hash(uint64 i, uint64 j)  {
+    return (((i + j) * (i + j + 1)) >> 1) + j;
+}
+
 struct ne_gene_hash
 {
     inline uint64 operator () (const ne_gene* x) const {
-        return (((x->i->id + x->j->id) * (x->i->id + x->j->id + 1)) >> 1) + x->j->id;
+        return ne_hash(x->i->id, x->j->id);
     }
 };
 

@@ -40,7 +40,7 @@ void ne_genome::compute() {
     }
     
     for(ne_node* node : nodes) {
-        if(node->activated && node->id >= input_size) {
+        if(node->activated) {
             node->value = ne_function(node->sum);
         }
     }
@@ -50,7 +50,7 @@ void ne_genome::mutate_add_node(ne_params &params) {
     uint64 gs = genes.size();
     
     if(gs != 0) {
-        ne_gene* gene = genes[rand64() % gs];
+        ne_gene* gene = genes[ne_random() % gs];
         
         if(!gene->enabled() || gene->i->id == 0) return;
         
@@ -79,18 +79,18 @@ void ne_genome::mutate_add_node(ne_params &params) {
 void ne_genome::mutate_add_gene(ne_params &params) {
     uint64 size = nodes.size();
     
-    ne_gene q(nodes[rand64() % size], nodes[input_size + (rand64() % (size - input_size))]);
+    ne_gene q(nodes[ne_random() % size], nodes[input_size + (ne_random() % (size - input_size))]);
     
     ne_gene_set::iterator it = gene_set.find(&q);
     if(it != gene_set.end()) {
         if(!(*it)->enabled()) {
-            (*it)->weight = random(-2.0, 2.0);
+            (*it)->weight = ne_random(-2.0, 2.0);
         }
     }else{
         ne_gene* gene = new ne_gene(q);
         
         gene->id = params.gene_ids++;
-        gene->weight = random(-2.0, 2.0);
+        gene->weight = ne_random(-2.0, 2.0);
         
         insert(gene);
     }
@@ -99,7 +99,7 @@ void ne_genome::mutate_add_gene(ne_params &params) {
 void ne_genome::mutate_weights(const ne_params &params) {
     for(ne_gene* gene : genes) {
         if(gene->enabled()) {
-            gene->weight += random(-params.mutate_weights_power, params.mutate_weights_power);
+            gene->weight += ne_random(-params.mutate_weights_power, params.mutate_weights_power);
         }
     }
 }
@@ -251,17 +251,17 @@ void ne_population::add(ne_genome *g) {
 ne_genome* ne_population::breed(ne_species *sp) {
     ne_genome* baby;
     
-    uint64 i1 = random(0, sp->parents);
+    uint64 i1 = ne_random(0, sp->parents - 1);
     
-    if(random(0.0, 1.0) < params.mutate_only_prob || sp->parents == 1) {
+    if(ne_random(0.0, 1.0) < params.mutate_only_prob || sp->parents == 1) {
         baby = new ne_genome(*sp->genomes[i1]);
     }else{
-        uint64 i2 = random(0, sp->parents);
+        uint64 i2 = ne_random(0, sp->parents - 1);
         baby = ne_genome::crossover(sp->genomes[i1], sp->genomes[i2], params);
     }
     
     ne_mutate(baby, params);
-    
+
     return baby;
 }
 
@@ -308,12 +308,11 @@ ne_genome* ne_population::select() {
     }
     
     uint64 leftover = params.population - offsprings;
-    while(leftover != 0) {
-        for(ne_species* sp : species) {
-            if(leftover == 0) break;
-            ++sp->offsprings;
-            --leftover;
-        }
+    uint64 ms = species.size() - 1;
+    while(true) {
+        if(leftover == 0) break;
+        ++species[ne_random(0, ms)]->offsprings;
+        --leftover;
     }
     
     return best;

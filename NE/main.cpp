@@ -53,10 +53,10 @@ struct Pendulum
     void reset() {
         float64 range = 1.0;
         
-        x = random(-range, range);
-        vx = random(-range, range);
-        a = random(-range, range) + M_PI;
-        va = random(-range, range);
+        x = ne_random(-range, range);
+        vx = ne_random(-range, range);
+        a = ne_random(-range, range) + M_PI;
+        va = ne_random(-range, range);
     }
     
     void run(ne_genome* gen, bool p) {
@@ -181,7 +181,7 @@ struct Game2048
             if(grid[i] == 2) idx.push_back(i);
         }
         
-        grid[idx[rand64() % idx.size()]] += 2;
+        grid[idx[ne_random() % idx.size()]] += 2;
     }
     
     uint64 move_left(bool& moved) {

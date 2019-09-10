@@ -146,15 +146,15 @@ protected:
 };
 
 inline void ne_mutate(ne_genome* g, ne_params& params) {
-    if(random(0.0, 1.0) < params.mutate_add_node_prob) {
+    if(ne_random(0.0, 1.0) < params.mutate_add_node_prob) {
         g->mutate_add_node(params);
     }
     
-    if(random(0.0, 1.0) < params.mutate_add_gene_prob) {
+    if(ne_random(0.0, 1.0) < params.mutate_add_gene_prob) {
         g->mutate_add_gene(params);
     }
     
-    if(random(0.0, 1.0) < params.mutate_weights_prob) {
+    if(ne_random(0.0, 1.0) < params.mutate_weights_prob) {
         g->mutate_weights(params);
     }
 }
