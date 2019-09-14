@@ -20,25 +20,25 @@ ne_params params;
 
 struct Pendulum
 {
-    static const uint64 input_size = 3;
-    static const uint64 output_size = 1;
+    static const ne_uint input_size = 3;
+    static const ne_uint output_size = 1;
     
-    float64 x;
-    float64 vx;
-    float64 a;
-    float64 va;
+    ne_float x;
+    ne_float vx;
+    ne_float a;
+    ne_float va;
     
-    float64 g;
-    float64 m_c;
-    float64 m_p;
-    float64 m;
-    float64 l;
-    float64 f;
-    float64 b;
+    ne_float g;
+    ne_float m_c;
+    ne_float m_p;
+    ne_float m;
+    ne_float l;
+    ne_float f;
+    ne_float b;
     
-    float64 xt = 10.0;
+    ne_float xt = 10.0;
     
-    float64 fitness;
+    ne_float fitness;
     
     Pendulum() {
         g = 9.8;
@@ -51,12 +51,12 @@ struct Pendulum
     }
     
     void reset() {
-        float64 range = 1.0;
+        ne_float range = 1.0;
         
-        x = ne_random(-range, range);
-        vx = ne_random(-range, range);
-        a = ne_random(-range, range) + M_PI;
-        va = ne_random(-range, range);
+        x = ne_random(-2.0, 2.0);
+        vx = ne_random(-1.0, 1.0);
+        a = ne_random(-M_PI, M_PI);
+        va = ne_random(-M_PI, M_PI);
     }
     
     void run(ne_genome* gen, bool p) {
@@ -74,22 +74,16 @@ struct Pendulum
             
             double action = 0.0;
             
-            if((i % 2) == 0) {
-                //inputs[0]->value = vx;
-                inputs[0]->value = 1.0;
-                inputs[1]->value = x;
-                inputs[2]->value = a;
-                //inputs[2]->value = vx;
-                //inputs[3]->value = va;
-                //inputs[3]->value = s;
-                //inputs[3]->value = va;
-                
-                gen->compute();
-                
-                action = outputs[0]->value * 2.0 - 1.0;
-                
-                action *= f;
-            }
+            inputs[0]->value = 1.0;
+            inputs[1]->value = x;
+            inputs[2]->value = c;
+            inputs[3]->value = s;
+            
+            gen->compute();
+            
+            action = outputs[0]->value * 2.0 - 1.0;
+            
+            action *= f;
             
             double va2 = va * va;
             double c2 = c * c;
@@ -106,8 +100,8 @@ struct Pendulum
             if(x < -xt || x > xt)
                 break;
             
-            float64 f1 = std::max(cos(a), 0.0);
-            float64 f2 = (xt - fabs(x)) / xt;
+            ne_float f1 = std::max(cos(a), 0.0);
+            ne_float f2 = (xt - fabs(x)) / xt;
             
             fitness += f1 + (f1 * f2);
             
@@ -122,10 +116,10 @@ struct Pendulum
 
 struct XOR
 {
-    static const uint64 input_size = 3;
-    static const uint64 output_size = 1;
+    static const ne_uint input_size = 3;
+    static const ne_uint output_size = 1;
     
-    float64 fitness;
+    ne_float fitness;
     
     void run(ne_genome* gen, bool p) {
         fitness = 0.0;
@@ -155,14 +149,14 @@ struct XOR
 
 struct Game2048
 {
-    static const uint64 input_size = 17;
-    static const uint64 output_size = 4;
+    static const ne_uint input_size = 17;
+    static const ne_uint output_size = 4;
     
-    float64 fitness;
+    ne_float fitness;
     
-    uint64 grid[16];
+    ne_uint grid[16];
     
-    inline uint64& get(int x, int y) {
+    inline ne_uint& get(int x, int y) {
         return grid[x + y * 4];
     }
     
@@ -184,15 +178,15 @@ struct Game2048
         grid[idx[ne_random() % idx.size()]] += 2;
     }
     
-    uint64 move_left(bool& moved) {
-        uint64 score = 0;
+    ne_uint move_left(bool& moved) {
+        ne_uint score = 0;
         for(int y = 0; y < 4; ++y) {
             for(int x = 0; x < 4; ++x) {
-                uint64 v1 = get(x, y);
+                ne_uint v1 = get(x, y);
                 if(v1 == 0) continue;
                 
                 for(int i = x + 1; i < 4; ++i) {
-                    uint64 v2 = get(i, y);
+                    ne_uint v2 = get(i, y);
                     if(v1 == v2) {
                         score += v1 + v2;
                         moved = true;
@@ -219,15 +213,15 @@ struct Game2048
         return score;
     }
     
-    uint64 move_right(bool& moved) {
-        uint64 score = 0;
+    ne_uint move_right(bool& moved) {
+        ne_uint score = 0;
         for(int y = 0; y < 4; ++y) {
             for(int x = 3; x >= 0; --x) {
-                uint64 v1 = get(x, y);
+                ne_uint v1 = get(x, y);
                 if(v1 == 0) continue;
                 
                 for(int i = x - 1; i >= 0; --i) {
-                    uint64 v2 = get(i, y);
+                    ne_uint v2 = get(i, y);
                     if(v1 == v2) {
                         score += v1 + v2;
                         moved = true;
@@ -254,15 +248,15 @@ struct Game2048
         return score;
     }
     
-    uint64 move_up(bool& moved) {
-        uint64 score = 0;
+    ne_uint move_up(bool& moved) {
+        ne_uint score = 0;
         for(int x = 0; x < 4; ++x) {
             for(int y = 0; y < 4; ++y) {
-                uint64 v1 = get(x, y);
+                ne_uint v1 = get(x, y);
                 if(v1 == 0) continue;
                 
                 for(int i = y + 1; i < 4; ++i) {
-                    uint64 v2 = get(x, i);
+                    ne_uint v2 = get(x, i);
                     if(v1 == v2) {
                         score += v1 + v2;
                         moved = true;
@@ -289,15 +283,15 @@ struct Game2048
         return score;
     }
     
-    uint64 move_down(bool& moved) {
-        uint64 score = 0;
+    ne_uint move_down(bool& moved) {
+        ne_uint score = 0;
         for(int x = 0; x < 4; ++x) {
             for(int y = 3; y >= 0; --y) {
-                uint64 v1 = get(x, y);
+                ne_uint v1 = get(x, y);
                 if(v1 == 0) continue;
                 
                 for(int i = y - 1; i >= 0; --i) {
-                    uint64 v2 = get(x, i);
+                    ne_uint v2 = get(x, i);
                     if(v1 == v2) {
                         score += v1 + v2;
                         moved = true;
@@ -389,7 +383,7 @@ struct Game2048
                 
                 bool moved = false;
                 
-                uint64 i = 0;
+                ne_uint i = 0;
                 while(!moved) {
                     int c = choices[i];
                     if(c == 0) {
@@ -416,16 +410,13 @@ struct Game2048
     }
 };
 
-typedef Pendulum obj_type;
-
-std::vector<obj_type> objs;
+typedef Game2048 obj_type;
 
 void initialize() {
     params.input_size = obj_type::input_size;
     params.output_size = obj_type::output_size;
     population = new ne_population(params);
     population->initialize();
-    objs.resize(params.population);
 }
 
 int main(int argc, const char * argv[]) {
@@ -440,12 +431,16 @@ int main(int argc, const char * argv[]) {
     
     ne_genome* best = nullptr;
     
-    std::vector<float64> highs;
+    std::vector<ne_float> highs;
+    
+    obj_type obj;
     
     for(int n = 0; n < gens; ++n) {
-        for(int i = 0; i < params.population; ++i) {
-            objs[i].run(population->genomes[i], false);
-            population->genomes[i]->fitness = objs[i].fitness;
+        for(ne_species* sp : population->species) {
+            for(ne_genome* g : sp->genomes) {
+                obj.run(g, false);
+                g->fitness = obj.fitness;
+            }
         }
         
         std::cout << "Generation: " << n << std::endl;
@@ -459,8 +454,8 @@ int main(int argc, const char * argv[]) {
         std::cout << "fitness: " << best->fitness << std::endl;
         
         if(n == gens - 1) {
-            objs[0].run(best, true);
-            std::cout << "fitness: " << objs[0].fitness << std::endl;
+            obj.run(best, true);
+            std::cout << "fitness: " << obj.fitness << std::endl;
             
             for(ne_node* node : best->nodes) {
                 std::cout << "node: " << node->id << std::endl;
@@ -478,7 +473,7 @@ int main(int argc, const char * argv[]) {
     
     std::cout << "Highs: " << std::endl;
     
-    for(uint64 i = 0; i < gens; ++i) {
+    for(ne_uint i = 0; i < gens; ++i) {
         std::cout << i << "\t" << highs[i] << std::endl;
     }
     

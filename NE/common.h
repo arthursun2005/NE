@@ -23,7 +23,7 @@ typedef unsigned int uint32;
 typedef unsigned long uint64;
 
 template <class T, class C>
-inline void insert_in_order(std::vector<T>* a, const T& x, const C& compare) {
+inline void insert_in_order(std::vector<T>* a, const T& x, C& compare) {
     typename std::vector<T>::iterator end = a->end();
     
     while(end-- != a->begin()) {

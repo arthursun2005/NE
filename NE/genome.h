@@ -12,11 +12,8 @@
 #include "ne.h"
 #include <vector>
 
-class ne_genome
+struct ne_genome
 {
-    
-public:
-    
     ne_genome() {}
     
     ne_genome(const ne_genome& genome) {
@@ -46,13 +43,13 @@ public:
     }
     
     inline void flush() {
-        uint64 size = nodes.size();
+        ne_uint size = nodes.size();
         
-        for(uint64 i = 0; i < input_size; ++i) {
+        for(ne_uint i = 0; i < input_size; ++i) {
             nodes[i]->activated = true;
         }
         
-        for(uint64 i = input_size; i < size; ++i) {
+        for(ne_uint i = input_size; i < size; ++i) {
             nodes[i]->activated = false;
         }
     }
@@ -68,23 +65,21 @@ public:
     }
     
     static ne_genome* crossover(const ne_genome* a, const ne_genome* b, ne_params& params);
-    static float64 distance(const ne_genome* a, const ne_genome* b, const ne_params &params);
+    static ne_float distance(const ne_genome* a, const ne_genome* b, const ne_params &params);
     
-    float64 fitness;
+    ne_float fitness;
     
     std::vector<ne_node*> nodes;
     std::vector<ne_gene*> genes;
-    
-protected:
-    
+        
     inline void initialize() {
-        for(uint64 i = 0; i < input_size; ++i) {
+        for(ne_uint i = 0; i < input_size; ++i) {
             ne_node node;
             node.id = i;
             find(&node);
         }
         
-        for(uint64 i = 0; i < output_size; ++i) {
+        for(ne_uint i = 0; i < output_size; ++i) {
             ne_node node;
             node.id = i + ne_max_nodes;
             find(&node);
@@ -107,8 +102,8 @@ protected:
         ne_node_set::iterator it = node_set.find(node);
         
         if(it == node_set.end()) {
-            ne_node* new_node = new ne_node(*node);
-            new_node->genes.clear();
+            ne_node* new_node = new ne_node();
+            new_node->id = node->id;
             insert(new_node);
             return new_node;
         }
@@ -132,7 +127,7 @@ protected:
         
         for(ne_node* node : nodes)
             delete node;
-        
+
         genes.clear();
         nodes.clear();
     }
@@ -140,8 +135,8 @@ protected:
     ne_node_set node_set;
     ne_gene_set gene_set;
     
-    uint64 input_size;
-    uint64 output_size;
+    ne_uint input_size;
+    ne_uint output_size;
     
 };
 

@@ -15,21 +15,18 @@ struct ne_species
 {
     std::vector<ne_genome*> genomes;
     
-    float64 avg_fitness;
+    ne_float avg_fitness;
     
-    uint64 parents;
-    uint64 offsprings;
+    ne_uint parents;
+    ne_uint offsprings;
     
     static inline bool sort(const ne_species* a, const ne_species* b) {
         return a->avg_fitness > b->avg_fitness;
     }
 };
 
-class ne_population
+struct ne_population
 {
-    
-public:
-    
     ne_population(const ne_params& params) : params(params) {}
     
     ne_population(const ne_population& population) {
@@ -50,26 +47,17 @@ public:
     ne_params params;
     
     std::vector<ne_species*> species;
-    std::vector<ne_genome*> genomes;
-    
-protected:
     
     inline void clear() {
         for(ne_species* sp : species) {
             delete sp;
         }
-                
-        for(ne_genome* g : genomes) {
-            delete g;
-        }
         
         species.clear();
-        genomes.clear();
     }
     
     ne_genome* breed(ne_species* sp);
     void add(ne_genome* g);
-    
 };
 
 #endif /* population_h */
