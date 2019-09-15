@@ -14,24 +14,30 @@
 
 struct ne_genome
 {
-    ne_genome() {}
+    ne_float fitness;
     
-    ne_genome(const ne_genome& genome) {
+    std::vector<ne_node*> nodes;
+    std::vector<ne_link*> links;
+    
+    ne_link_set link_set;
+    
+    ne_uint input_size;
+    ne_uint output_size;
+    
+    inline ne_genome(const ne_genome& genome) {
         *this = genome;
     }
     
+    ne_genome(const ne_params& params);
+    
     ne_genome& operator = (const ne_genome& genome);
     
-    ~ne_genome() {
-        clear();
-    }
-    
-    inline void reset(ne_params& params) {
-        input_size = params.input_size;
-        output_size = params.output_size;
-        clear();
-        initialize();
-        mutate_add_gene(params);
+    inline ~ne_genome() {
+        for(ne_link* link : links)
+            delete link;
+        
+        for(ne_node* node : nodes)
+            delete node;
     }
     
     inline ne_node** inputs() {
@@ -42,116 +48,34 @@ struct ne_genome
         return nodes.data() + nodes.size() - output_size;
     }
     
-    inline void flush() {
-        ne_uint size = nodes.size();
-        
-        for(ne_uint i = 0; i < input_size; ++i) {
-            nodes[i]->activated = true;
-        }
-        
-        for(ne_uint i = input_size; i < size; ++i) {
-            nodes[i]->activated = false;
-        }
-    }
-    
-    void compute();
+    void flush();
+    void activate();
     
     void mutate_add_node(ne_params& params);
-    void mutate_add_gene(ne_params& params);
+    void mutate_add_link();
     void mutate_weights(const ne_params& params);
     
-    static inline bool sort(const ne_genome* a, const ne_genome* b) {
-        return a->fitness > b->fitness;
-    }
-    
-    static ne_genome* crossover(const ne_genome* a, const ne_genome* b, ne_params& params);
-    static ne_float distance(const ne_genome* a, const ne_genome* b, const ne_params &params);
-    
-    ne_float fitness;
-    
-    std::vector<ne_node*> nodes;
-    std::vector<ne_gene*> genes;
-        
-    inline void initialize() {
-        for(ne_uint i = 0; i < input_size; ++i) {
-            ne_node node;
-            node.id = i;
-            find(&node);
-        }
-        
-        for(ne_uint i = 0; i < output_size; ++i) {
-            ne_node node;
-            node.id = i + ne_max_nodes;
-            find(&node);
-        }
-    }
-    
     inline void insert(ne_node* node) {
-        insert_in_order(&nodes, node, ne_node::sort);
-        node_set.insert(node);
-    }
-    
-    inline void insert(ne_gene* gene) {
-        insert_in_order(&genes, gene, ne_gene::sort);
-        gene_set.insert(gene);
+        std::vector<ne_node*>::iterator end = nodes.end();
+        std::vector<ne_node*>::iterator begin = nodes.begin();
         
-        gene->j->genes.push_back(gene);
-    }
-    
-    inline ne_node* find(ne_node* node) {
-        ne_node_set::iterator it = node_set.find(node);
-        
-        if(it == node_set.end()) {
-            ne_node* new_node = new ne_node();
-            new_node->id = node->id;
-            insert(new_node);
-            return new_node;
+        while(end-- != begin) {
+            if(node->id > (*end)->id) break;
         }
         
-        return *it;
+        ++end;
+        nodes.insert(end, node);
     }
     
-    inline void pass_down(ne_gene* gene) {
-        gene->i = find(gene->i);
-        gene->j = find(gene->j);
+    inline void insert(ne_link* link) {
+        links.push_back(link);
+        link_set.insert(link);
         
-        insert(gene);
+        link->j->links.push_back(link);
     }
-    
-    inline void clear() {
-        node_set.clear();
-        gene_set.clear();
-        
-        for(ne_gene* gene : genes)
-            delete gene;
-        
-        for(ne_node* node : nodes)
-            delete node;
-
-        genes.clear();
-        nodes.clear();
-    }
-    
-    ne_node_set node_set;
-    ne_gene_set gene_set;
-    
-    ne_uint input_size;
-    ne_uint output_size;
     
 };
 
-inline void ne_mutate(ne_genome* g, ne_params& params) {
-    if(ne_random(0.0, 1.0) < params.mutate_add_node_prob) {
-        g->mutate_add_node(params);
-    }
-    
-    if(ne_random(0.0, 1.0) < params.mutate_add_gene_prob) {
-        g->mutate_add_gene(params);
-    }
-    
-    if(ne_random(0.0, 1.0) < params.mutate_weights_prob) {
-        g->mutate_weights(params);
-    }
-}
+void ne_mutate(ne_genome* g, ne_params& params);
 
 #endif /* genome_h */

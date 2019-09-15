@@ -22,16 +22,4 @@ typedef unsigned short uint16;
 typedef unsigned int uint32;
 typedef unsigned long uint64;
 
-template <class T, class C>
-inline void insert_in_order(std::vector<T>* a, const T& x, C& compare) {
-    typename std::vector<T>::iterator end = a->end();
-    
-    while(end-- != a->begin()) {
-        if(compare(*end, x)) break;
-    }
-    
-    ++end;
-    a->insert(end, x);
-}
-
 #endif /* common_h */

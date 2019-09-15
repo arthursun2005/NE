@@ -8,7 +8,7 @@
 
 /* Begin PBXBuildFile section */
 		8E99F08C230FFA7C0051D8D9 /* main.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 8E99F08B230FFA7C0051D8D9 /* main.cpp */; };
-		8E99F09823108E030051D8D9 /* population.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 8E99F09723108E030051D8D9 /* population.cpp */; };
+		8E99F09823108E030051D8D9 /* ne.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 8E99F09723108E030051D8D9 /* ne.cpp */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXCopyFilesBuildPhase section */
@@ -29,7 +29,7 @@
 		8E99F092230FFA8D0051D8D9 /* ne.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = ne.h; sourceTree = "<group>"; };
 		8E99F095230FFAAD0051D8D9 /* common.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = common.h; sourceTree = "<group>"; };
 		8E99F09623108DF70051D8D9 /* genome.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = genome.h; sourceTree = "<group>"; };
-		8E99F09723108E030051D8D9 /* population.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = population.cpp; sourceTree = "<group>"; };
+		8E99F09723108E030051D8D9 /* ne.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = ne.cpp; sourceTree = "<group>"; };
 		8E99F099231091540051D8D9 /* population.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = population.h; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
@@ -64,7 +64,7 @@
 			isa = PBXGroup;
 			children = (
 				8E99F08B230FFA7C0051D8D9 /* main.cpp */,
-				8E99F09723108E030051D8D9 /* population.cpp */,
+				8E99F09723108E030051D8D9 /* ne.cpp */,
 				8E99F099231091540051D8D9 /* population.h */,
 				8E99F09623108DF70051D8D9 /* genome.h */,
 				8E99F092230FFA8D0051D8D9 /* ne.h */,
@@ -129,7 +129,7 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				8E99F09823108E030051D8D9 /* population.cpp in Sources */,
+				8E99F09823108E030051D8D9 /* ne.cpp in Sources */,
 				8E99F08C230FFA7C0051D8D9 /* main.cpp in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;

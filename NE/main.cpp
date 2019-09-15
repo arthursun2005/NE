@@ -20,7 +20,7 @@ ne_params params;
 
 struct Pendulum
 {
-    static const ne_uint input_size = 3;
+    static const ne_uint input_size = 6;
     static const ne_uint output_size = 1;
     
     ne_float x;
@@ -51,11 +51,9 @@ struct Pendulum
     }
     
     void reset() {
-        ne_float range = 1.0;
-        
         x = ne_random(-2.0, 2.0);
         vx = ne_random(-1.0, 1.0);
-        a = ne_random(-M_PI, M_PI);
+        a = ne_random(-0.0, 0.0);
         va = ne_random(-M_PI, M_PI);
     }
     
@@ -78,8 +76,10 @@ struct Pendulum
             inputs[1]->value = x;
             inputs[2]->value = c;
             inputs[3]->value = s;
+            inputs[4]->value = va;
+            inputs[5]->value = vx;
             
-            gen->compute();
+            gen->activate();
             
             action = outputs[0]->value * 2.0 - 1.0;
             
@@ -136,7 +136,7 @@ struct XOR
                 inputs[2]->value = b;
                 
                 gen->flush();
-                gen->compute();
+                gen->activate();
                 
                 double d = outputs[0]->value - c;
                 fitness += 1.0 - d * d;
@@ -372,7 +372,7 @@ struct Game2048
                 }
                 
                 gen->flush();
-                gen->compute();
+                gen->activate();
                 
                 std::vector<int> choices(4);
                 for(int i = 0; i < 4; ++i) choices[i] = i;
@@ -410,7 +410,7 @@ struct Game2048
     }
 };
 
-typedef Game2048 obj_type;
+typedef Pendulum obj_type;
 
 void initialize() {
     params.input_size = obj_type::input_size;
@@ -436,20 +436,14 @@ int main(int argc, const char * argv[]) {
     obj_type obj;
     
     for(int n = 0; n < gens; ++n) {
-        for(ne_species* sp : population->species) {
-            for(ne_genome* g : sp->genomes) {
-                obj.run(g, false);
-                g->fitness = obj.fitness;
-            }
+        for(ne_genome* g : population->genomes) {
+            obj.run(g, false);
+            g->fitness = obj.fitness;
         }
         
         std::cout << "Generation: " << n << std::endl;
         
-        best = population->select();
-        
-        for(ne_species* sp : population->species) {
-            std::cout << "Species: " << sp->avg_fitness << "  offsprings: " << sp->offsprings << "  size: " << sp->genomes.size() << std::endl;
-        }
+        best = population->analyse();
         
         std::cout << "fitness: " << best->fitness << std::endl;
         
@@ -459,8 +453,8 @@ int main(int argc, const char * argv[]) {
             
             for(ne_node* node : best->nodes) {
                 std::cout << "node: " << node->id << std::endl;
-                for(ne_gene* gene : node->genes) {
-                    std::cout << "gene: " << gene->id << " " << gene->weight << " " << gene->i->id << std::endl;
+                for(ne_link* link : node->links) {
+                    std::cout << "link: " << link->weight << " " << link->i->id << std::endl;
                 }
                 std::cout << std::endl;
             }
