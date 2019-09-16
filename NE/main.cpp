@@ -16,11 +16,11 @@ ne_population* population;
 #define time_step 0.01f
 
 int gens;
-ne_params params;
+ne_settings settings;
 
 struct Pendulum
 {
-    static const ne_uint input_size = 6;
+    static const ne_uint input_size = 4;
     static const ne_uint output_size = 1;
     
     ne_float x;
@@ -53,7 +53,7 @@ struct Pendulum
     void reset() {
         x = ne_random(-2.0, 2.0);
         vx = ne_random(-1.0, 1.0);
-        a = ne_random(-0.0, 0.0);
+        a = ne_random(-M_PI, M_PI);
         va = ne_random(-M_PI, M_PI);
     }
     
@@ -76,8 +76,8 @@ struct Pendulum
             inputs[1]->value = x;
             inputs[2]->value = c;
             inputs[3]->value = s;
-            inputs[4]->value = va;
-            inputs[5]->value = vx;
+            //inputs[4]->value = va;
+            //inputs[5]->value = vx;
             
             gen->activate();
             
@@ -140,6 +140,10 @@ struct XOR
                 
                 double d = outputs[0]->value - c;
                 fitness += 1.0 - d * d;
+                
+                if(p) {
+                    std::cout << outputs[0]->value << std::endl;
+                }
             }
         }
         
@@ -172,10 +176,9 @@ struct Game2048
         std::vector<int> idx;
         for(int i = 0; i < 16; ++i) {
             if(grid[i] == 0) idx.push_back(i);
-            if(grid[i] == 2) idx.push_back(i);
         }
         
-        grid[idx[ne_random() % idx.size()]] += 2;
+        grid[idx[ne_random() % idx.size()]] = ne_random(0.0, 1.0) < 0.9 ? 2 : 4;
     }
     
     ne_uint move_left(bool& moved) {
@@ -368,7 +371,7 @@ struct Game2048
             }else{
                 inputs[0]->value = 1.0;
                 for(int i = 0; i < 16; ++i) {
-                    inputs[i + 1]->value = log2(grid[i] + 1.0);
+                    inputs[i + 1]->value = grid[i];
                 }
                 
                 gen->flush();
@@ -406,16 +409,83 @@ struct Game2048
             }
         }
         
-        
     }
 };
 
-typedef Pendulum obj_type;
+struct DIR
+{
+    static const ne_uint input_size = 2;
+    static const ne_uint output_size = 2;
+    
+    ne_float fitness;
+    
+    void run(ne_genome* gen, bool p) {
+        fitness = 0.0;
+        
+        ne_node** inputs = gen->inputs();
+        ne_node** outputs = gen->outputs();
+        
+        ne_float a = -0.0;
+        ne_uint q = 200;
+        ne_float d;
+        for(ne_uint n = 0; n < q; ++n) {
+            inputs[0]->value = 1.0;
+            inputs[1]->value = a;
+            
+            gen->flush();
+            gen->activate();
+            
+            d = outputs[0]->value * 2.0 - 1.0 - cos(a);
+            fitness += 0.5 - d * d;
+            
+            d = outputs[1]->value * 2.0 - 1.0 - sin(a);
+            fitness += 0.5 - d * d;
+            
+            a += 0.05;
+        }
+        
+        fitness /= (ne_float) q;
+    }
+};
+
+struct GOL
+{
+    static const ne_uint input_size = 2;
+    static const ne_uint output_size = 1;
+    
+    ne_float fitness;
+    
+    void run(ne_genome* gen, bool p) {
+        fitness = 0.0;
+        
+        ne_node** inputs = gen->inputs();
+        ne_node** outputs = gen->outputs();
+        
+        for(ne_uint a = 0; a <= 8; ++a) {
+            inputs[0]->value = 1.0;
+            inputs[1]->value = a;
+            
+            gen->flush();
+            gen->activate();
+            
+            ne_float d = outputs[0]->value - (a == 1 ? 1.0 : 0.0);
+            fitness += 1.0 - d * d;
+            
+            if(p) {
+                std::cout << outputs[0]->value << std::endl;
+            }
+        }
+        
+        fitness /= (ne_float) 9;
+    }
+};
+
+typedef GOL obj_type;
 
 void initialize() {
-    params.input_size = obj_type::input_size;
-    params.output_size = obj_type::output_size;
-    population = new ne_population(params);
+    settings.input_size = obj_type::input_size;
+    settings.output_size = obj_type::output_size;
+    population = new ne_population(settings);
     population->initialize();
 }
 
@@ -470,7 +540,7 @@ int main(int argc, const char * argv[]) {
     for(ne_uint i = 0; i < gens; ++i) {
         std::cout << i << "\t" << highs[i] << std::endl;
     }
-    
+
     delete population;
         
     return 0;

@@ -27,7 +27,6 @@
 		8E99F088230FFA7C0051D8D9 /* NE */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = NE; sourceTree = BUILT_PRODUCTS_DIR; };
 		8E99F08B230FFA7C0051D8D9 /* main.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = main.cpp; sourceTree = "<group>"; };
 		8E99F092230FFA8D0051D8D9 /* ne.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = ne.h; sourceTree = "<group>"; };
-		8E99F095230FFAAD0051D8D9 /* common.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = common.h; sourceTree = "<group>"; };
 		8E99F09623108DF70051D8D9 /* genome.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = genome.h; sourceTree = "<group>"; };
 		8E99F09723108E030051D8D9 /* ne.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = ne.cpp; sourceTree = "<group>"; };
 		8E99F099231091540051D8D9 /* population.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = population.h; sourceTree = "<group>"; };
@@ -68,7 +67,6 @@
 				8E99F099231091540051D8D9 /* population.h */,
 				8E99F09623108DF70051D8D9 /* genome.h */,
 				8E99F092230FFA8D0051D8D9 /* ne.h */,
-				8E99F095230FFAAD0051D8D9 /* common.h */,
 			);
 			path = NE;
 			sourceTree = "<group>";

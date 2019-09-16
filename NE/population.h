@@ -13,12 +13,12 @@
 
 struct ne_population
 {
-    ne_float total_fitness;
+    ne_float average_rank;
     
-    ne_params params;
+    ne_settings settings;
     std::vector<ne_genome*> genomes;
     
-    inline ne_population(const ne_params& params) : params(params) {}
+    inline ne_population(const ne_settings& settings) : settings(settings) {}
     
     inline ne_population(const ne_population& population) {
         *this = population;
@@ -27,6 +27,10 @@ struct ne_population
     ne_population& operator = (const ne_population& population);
     
     inline ~ne_population() {
+        clear();
+    }
+    
+    inline void clear() {
         for(ne_genome* g : genomes)
             delete g;
     }

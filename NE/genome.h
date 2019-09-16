@@ -13,7 +13,8 @@
 #include <vector>
 
 struct ne_genome
-{
+{    
+    ne_float rank;
     ne_float fitness;
     
     std::vector<ne_node*> nodes;
@@ -21,16 +22,13 @@ struct ne_genome
     
     ne_link_set link_set;
     
-    ne_uint input_size;
-    ne_uint output_size;
+    ne_settings* settings;
     
-    inline ne_genome(const ne_genome& genome) {
-        *this = genome;
-    }
+    ne_genome(const ne_genome& genome);
     
-    ne_genome(const ne_params& params);
+    ne_genome(ne_settings& _settings);
     
-    ne_genome& operator = (const ne_genome& genome);
+    ne_genome& operator = (const ne_genome& genome) = delete;
     
     inline ~ne_genome() {
         for(ne_link* link : links)
@@ -45,15 +43,15 @@ struct ne_genome
     }
     
     inline ne_node** outputs() {
-        return nodes.data() + nodes.size() - output_size;
+        return nodes.data() + nodes.size() - settings->output_size;
     }
     
     void flush();
     void activate();
     
-    void mutate_add_node(ne_params& params);
+    void mutate_add_node();
     void mutate_add_link();
-    void mutate_weights(const ne_params& params);
+    void mutate_weights();
     
     inline void insert(ne_node* node) {
         std::vector<ne_node*>::iterator end = nodes.end();
@@ -75,7 +73,5 @@ struct ne_genome
     }
     
 };
-
-void ne_mutate(ne_genome* g, ne_params& params);
 
 #endif /* genome_h */

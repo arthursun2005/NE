@@ -9,15 +9,26 @@
 #ifndef ne_h
 #define ne_h
 
-#include "common.h"
 #include <vector>
 #include <fstream>
 #include <random>
 #include <unordered_set>
+#include <cmath>
+#include <functional>
+#include <cfloat>
+#include <iostream>
+
+typedef float float32;
+typedef double float64;
+
+typedef unsigned char uint8;
+typedef unsigned short uint16;
+typedef unsigned int uint32;
+typedef unsigned long uint64;
 
 #define ne_function(x) (1.0 / (1.0 + exp(-x)))
 
-#define ne_half_nodes (1ull << 63)
+#define ne_half_nodes (1llu << 63)
 
 #define ne_hash(i, j) ((((i + j) * (i + j + 1)) >> 1) + j)
 
@@ -44,8 +55,8 @@ struct ne_link;
 struct ne_node
 {
     ne_float value;
-    ne_float sum;
     
+    bool active;
     bool activated;
     ne_uint id;
     
@@ -89,23 +100,20 @@ struct ne_link_equal
 
 typedef std::unordered_set<ne_link*, ne_link_hash, ne_link_equal> ne_link_set;
 
-struct ne_params
-{
-    ne_float mutate_weights_power;
-    
+struct ne_settings
+{    
     ne_float mutate_add_node_prob;
     ne_float mutate_add_link_prob;
     
     ne_uint ids;
-    ne_uint input_size;
-    ne_uint output_size;
     ne_uint population;
     
-    ne_params() {
-        mutate_weights_power = 2.0;
-        
-        mutate_add_node_prob = 0.01;
-        mutate_add_link_prob = 0.1;
+    ne_uint input_size;
+    ne_uint output_size;
+    
+    ne_settings() {
+        mutate_add_node_prob = 0.05;
+        mutate_add_link_prob = 0.2;
         
         ids = 0;
         population = 256;
