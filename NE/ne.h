@@ -101,7 +101,7 @@ struct ne_link_equal
 typedef std::unordered_set<ne_link*, ne_link_hash, ne_link_equal> ne_link_set;
 
 struct ne_settings
-{    
+{
     ne_float mutate_add_node_prob;
     ne_float mutate_add_link_prob;
     
@@ -115,7 +115,6 @@ struct ne_settings
         mutate_add_node_prob = 0.05;
         mutate_add_link_prob = 0.2;
         
-        ids = 0;
         population = 256;
     }
 };

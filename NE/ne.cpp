@@ -63,8 +63,9 @@ void ne_genome::activate() {
             }
         }
         
+        node->value = ne_function(sum);
+        
         if(node->active) {
-            node->value = ne_function(sum);
             node->activated = true;
         }
     }
@@ -105,11 +106,8 @@ void ne_genome::mutate_add_link() {
     }
 }
 
-void ne_genome::mutate_weights() {
-    for(ne_link* link : links) {
-        if(link->enabled())
-            link->weight += ne_random(-1.0, 1.0);
-    }
+void ne_genome::mutate_weight() {
+    links[ne_random(0, links.size() - 1)]->weight += ne_random(-1.0, 1.0);
 }
 
 ne_population& ne_population::operator = (const ne_population& population) {
@@ -149,35 +147,35 @@ ne_genome* ne_population::breed(ne_genome *g) {
         baby->mutate_add_link();
     }
     
-    baby->mutate_weights();
+    baby->mutate_weight();
     
     return baby;
 }
 
 ne_genome* ne_population::analyse() {
-    average_rank = 0.0;
-    ne_genome* best = genomes.front();
+    average_fitness = 0.0;
     
     for(ne_genome* g : genomes) {
-        if(g->fitness > best->fitness)
-            best = g;
-        
-        g->rank = fmax(0.0, g->fitness);
-        g->rank *= g->rank;
-        average_rank += g->rank;
+        g->fitness = fmax(0.0, g->fitness);
+        g->fitness *= g->fitness;
+        average_fitness += g->fitness;
     }
     
-    average_rank /= (ne_float) settings.population;
+    average_fitness /= (ne_float) settings.population;
     
-    return best;
+    std::sort(genomes.begin(), genomes.end(), [] (ne_genome* a, ne_genome* b) {
+        return a->fitness > b->fitness;
+    });
+    
+    return genomes.front();
 }
 
 void ne_population::reproduce() {
     std::vector<ne_genome*> babies;
     
-    if(average_rank != 0.0) {
+    if(average_fitness != 0.0) {
         for(ne_genome* g : genomes) {
-            ne_uint offsprings = (ne_uint)floor(g->rank / average_rank);
+            ne_uint offsprings = (ne_uint)floor(g->fitness / average_fitness);
             
             for(ne_uint n = 0; n != offsprings; ++n)
                 babies.push_back(breed(g));

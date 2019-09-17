@@ -13,8 +13,7 @@
 #include <vector>
 
 struct ne_genome
-{    
-    ne_float rank;
+{
     ne_float fitness;
     
     std::vector<ne_node*> nodes;
@@ -51,7 +50,7 @@ struct ne_genome
     
     void mutate_add_node();
     void mutate_add_link();
-    void mutate_weights();
+    void mutate_weight();
     
     inline void insert(ne_node* node) {
         std::vector<ne_node*>::iterator end = nodes.end();

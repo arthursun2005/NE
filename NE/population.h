@@ -13,7 +13,7 @@
 
 struct ne_population
 {
-    ne_float average_rank;
+    ne_float average_fitness;
     
     ne_settings settings;
     std::vector<ne_genome*> genomes;

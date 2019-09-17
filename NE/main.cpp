@@ -7,6 +7,7 @@
 //
 
 #include <iostream>
+#include <iomanip>
 #include "population.h"
 
 ne_population* population;
@@ -17,6 +18,7 @@ ne_population* population;
 
 int gens;
 ne_settings settings;
+ne_float best_score = -FLT_MAX;
 
 struct Pendulum
 {
@@ -343,7 +345,7 @@ struct Game2048
     void print() {
         for(int y = 0; y < 4; ++y) {
             for(int x = 0; x < 4; ++x) {
-                std::cout << get(x, y) << " ";
+                std::cout << std::setw(5) << get(x, y) << " ";
             }
             
             std::cout << std::endl;
@@ -409,6 +411,8 @@ struct Game2048
             }
         }
         
+        best_score = fmax(fitness, best_score);
+        
     }
 };
 
@@ -425,7 +429,7 @@ struct DIR
         ne_node** inputs = gen->inputs();
         ne_node** outputs = gen->outputs();
         
-        ne_float a = -0.0;
+        ne_float a = 0.0;
         ne_uint q = 200;
         ne_float d;
         for(ne_uint n = 0; n < q; ++n) {
@@ -436,10 +440,10 @@ struct DIR
             gen->activate();
             
             d = outputs[0]->value * 2.0 - 1.0 - cos(a);
-            fitness += 0.5 - d * d;
+            fitness += (1.0 - d * d) * 0.5;
             
             d = outputs[1]->value * 2.0 - 1.0 - sin(a);
-            fitness += 0.5 - d * d;
+            fitness += (1.0 - d * d) * 0.5;
             
             a += 0.05;
         }
@@ -480,7 +484,115 @@ struct GOL
     }
 };
 
-typedef GOL obj_type;
+struct HANDDIGITS
+{
+    static const ne_uint input_size = 14 * 14 + 1;
+    static const ne_uint output_size = 10;
+    
+    ne_float fitness;
+    
+    unsigned char* images;
+    unsigned char* labels;
+    
+    int k, w, h;
+    
+    HANDDIGITS() {
+        std::ifstream f1;
+        f1.open("train-images-idx3-ubyte", std::fstream::ios_base::binary | std::fstream::ios_base::in);
+        
+        std::ifstream f2;
+        f2.open("train-labels-idx1-ubyte", std::fstream::ios_base::binary | std::fstream::ios_base::in);
+        
+        assert(f1.is_open() && f2.is_open());
+        
+        f1.read((char*)&k, sizeof(k));
+        f1.read((char*)&k, sizeof(k));
+        f1.read((char*)&w, sizeof(w));
+        f1.read((char*)&h, sizeof(h));
+        
+        k = __builtin_bswap32(k);
+        w = __builtin_bswap32(w);
+        h = __builtin_bswap32(h);
+        
+        images = (unsigned char*)::operator new(sizeof(unsigned char) * k * w * h);
+        f1.read((char*)(images), sizeof(unsigned char) * k * w * h);
+        
+        int nl;
+        
+        f2.read((char*)&nl, sizeof(nl));
+        f2.read((char*)&nl, sizeof(nl));
+        
+        nl = __builtin_bswap32(nl);
+        assert(nl == k);
+        
+        labels = (unsigned char*)::operator new(sizeof(unsigned char) * nl);
+        f2.read((char*)(labels), sizeof(unsigned char) * nl);
+    }
+    
+    ~HANDDIGITS() {
+        ::operator delete(images);
+        ::operator delete(labels);
+    }
+    
+    void load_image(int idx, ne_node** inputs) {
+        int q = w * h;
+        int a = idx * q;
+        //for(int i = 0; i < q; ++i) {
+        //    inputs[i]->value = images[a + i] / 0x1p8;
+        //}
+        
+        unsigned char* p = images + a;
+        for(int x = 0; x < 14; ++x) {
+            for(int y = 0; y < 14; ++y) {
+                int id = 2 * x + 2 * y * w;
+                inputs[x + y * 14]->value = 0.25 * (p[id] + p[1 + id] + p[w + id] + p[1 + w + id]) / 0x1p8;
+            }
+        }
+    }
+    
+    void run(ne_genome* gen, bool p) {
+        fitness = 0.0;
+        
+        ne_node** inputs = gen->inputs();
+        ne_node** outputs = gen->outputs();
+        
+        int trials = 100;
+        int correct = 0;
+        
+        for(int n = 0; n < trials; ++n) {
+            int i = (int)ne_random(0, (ne_uint)k - 1);
+            int label = labels[i];
+            inputs[0]->value = 1.0;
+            load_image(i, inputs + 1);
+            
+            gen->flush();
+            gen->activate();
+            
+            int h = 0;
+            for(int j = 0; j < 10; ++j) {
+                ne_float expected = label == j ? 1.0 : 0.0;
+                ne_float d = outputs[j]->value - expected;
+                fitness += (1.0 - d * d) * 0.1;
+                
+                if(outputs[j]->value > outputs[h]->value)
+                    h = j;
+                
+                if(p) std::cout << outputs[j]->value << " ";
+            }
+            
+            if(p) std::cout << "label: " << label << std::endl;
+            
+            if(h == label) ++correct;
+        }
+        
+        best_score = fmax(correct, best_score);
+        
+        fitness /= (ne_float)trials;
+        //fitness = correct;
+    }
+};
+
+typedef HANDDIGITS obj_type;
 
 void initialize() {
     settings.input_size = obj_type::input_size;
@@ -491,10 +603,12 @@ void initialize() {
 
 int main(int argc, const char * argv[]) {
     if(argc == 1) {
-        gens = 64;
+        gens = 0x7fffffff;
         std::cout << "default number of generations: " << gens << std::endl;
     }else{
         gens = std::stoi(argv[1]);
+        
+        if(gens == -1) gens = 0x7fffffff;
     }
     
     initialize();
@@ -511,11 +625,9 @@ int main(int argc, const char * argv[]) {
             g->fitness = obj.fitness;
         }
         
-        std::cout << "Generation: " << n << std::endl;
-        
         best = population->analyse();
-        
-        std::cout << "fitness: " << best->fitness << std::endl;
+
+        std::cout << n << " " << best->fitness << " " << best_score << std::endl;
         
         if(n == gens - 1) {
             obj.run(best, true);
@@ -530,7 +642,7 @@ int main(int argc, const char * argv[]) {
             }
         }
         
-        highs.push_back(best->fitness);
+        highs.push_back(best_score);
         
         population->reproduce();
     }
@@ -540,8 +652,8 @@ int main(int argc, const char * argv[]) {
     for(ne_uint i = 0; i < gens; ++i) {
         std::cout << i << "\t" << highs[i] << std::endl;
     }
-
+    
     delete population;
-        
+    
     return 0;
 }
