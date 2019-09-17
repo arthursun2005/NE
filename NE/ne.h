@@ -112,7 +112,7 @@ struct ne_settings
     ne_uint output_size;
     
     ne_settings() {
-        mutate_add_node_prob = 0.05;
+        mutate_add_node_prob = 0.01;
         mutate_add_link_prob = 0.2;
         
         population = 256;

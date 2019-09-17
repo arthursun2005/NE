@@ -119,6 +119,7 @@ ne_population& ne_population::operator = (const ne_population& population) {
     
     for(ne_uint i = 0; i != settings.population; ++i) {
         genomes[i] = new ne_genome(*population.genomes[i]);
+        genomes[i]->settings = &settings;
     }
     
     return *this;

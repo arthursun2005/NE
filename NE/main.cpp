@@ -18,7 +18,7 @@ ne_population* population;
 
 int gens;
 ne_settings settings;
-ne_float best_score = -FLT_MAX;
+ne_float best_score;
 
 struct Pendulum
 {
@@ -587,8 +587,8 @@ struct HANDDIGITS
         
         best_score = fmax(correct, best_score);
         
-        fitness /= (ne_float)trials;
-        //fitness = correct;
+        //fitness /= (ne_float)trials;
+        fitness = correct;
     }
 };
 
@@ -620,6 +620,7 @@ int main(int argc, const char * argv[]) {
     obj_type obj;
     
     for(int n = 0; n < gens; ++n) {
+        best_score = -FLT_MAX;
         for(ne_genome* g : population->genomes) {
             obj.run(g, false);
             g->fitness = obj.fitness;
