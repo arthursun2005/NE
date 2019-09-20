@@ -70,7 +70,8 @@ struct ne_link
 {
     ne_node* i;
     ne_node* j;
-
+    
+    ne_uint id;
     ne_float weight;
     
     ne_link(ne_node* i, ne_node* j) : i(i), j(j) {}
@@ -105,7 +106,10 @@ struct ne_settings
     ne_float mutate_add_node_prob;
     ne_float mutate_add_link_prob;
     
-    ne_uint ids;
+    ne_float mate_prob;
+    
+    ne_uint node_ids;
+    ne_uint link_ids;
     ne_uint population;
     
     ne_uint input_size;
@@ -115,6 +119,9 @@ struct ne_settings
         mutate_add_node_prob = 0.01;
         mutate_add_link_prob = 0.2;
         
+        mate_prob = 0.5;
+        
+        link_ids = 0;
         population = 256;
     }
 };

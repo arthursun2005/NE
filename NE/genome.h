@@ -23,9 +23,11 @@ struct ne_genome
     
     ne_settings* settings;
     
+    inline ne_genome() {}
+    
     ne_genome(const ne_genome& genome);
     
-    ne_genome(ne_settings& _settings);
+    ne_genome(ne_settings* _settings);
     
     ne_genome& operator = (const ne_genome& genome) = delete;
     
@@ -50,21 +52,14 @@ struct ne_genome
     
     void mutate_add_node();
     void mutate_add_link();
-    void mutate_weight();
     
-    inline void insert(ne_node* node) {
-        std::vector<ne_node*>::iterator end = nodes.end();
-        std::vector<ne_node*>::iterator begin = nodes.begin();
-        
-        while(end-- != begin) {
-            if(node->id > (*end)->id) break;
-        }
-        
-        ++end;
-        nodes.insert(end, node);
+    inline void mutate_weight() {
+        links[ne_random(0, links.size() - 1)]->weight += ne_random(-1.0, 1.0);
     }
     
-    inline void insert(ne_link* link) {
+    static ne_genome* crossover(ne_genome* a, ne_genome* b);
+    
+    inline void add(ne_link* link) {
         links.push_back(link);
         link_set.insert(link);
         

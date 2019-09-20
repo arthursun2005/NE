@@ -22,7 +22,7 @@ ne_float best_score;
 
 struct Pendulum
 {
-    static const ne_uint input_size = 4;
+    static const ne_uint input_size = 6;
     static const ne_uint output_size = 1;
     
     ne_float x;
@@ -78,8 +78,8 @@ struct Pendulum
             inputs[1]->value = x;
             inputs[2]->value = c;
             inputs[3]->value = s;
-            //inputs[4]->value = va;
-            //inputs[5]->value = vx;
+            inputs[4]->value = va;
+            inputs[5]->value = vx;
             
             gen->activate();
             
@@ -592,7 +592,7 @@ struct HANDDIGITS
     }
 };
 
-typedef HANDDIGITS obj_type;
+typedef Pendulum obj_type;
 
 void initialize() {
     settings.input_size = obj_type::input_size;
