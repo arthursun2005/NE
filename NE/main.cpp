@@ -435,7 +435,6 @@ struct DIR
             
             gen->flush();
             gen->activate();
-            //gen->adapt(0.0001);
             
             d = outputs[0]->value * 2.0 - 1.0 - cos(a);
             fitness += (1.0 - d * d) * 0.5;

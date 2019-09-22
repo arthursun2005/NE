@@ -20,30 +20,29 @@ void ne_genome::activate() {
     size_t size = nodes.size();
     
     for(size_t i = settings->input_size; i != size; ++i) {
-        double sum = 0.0;
+        ne_float sum = 0.0;
         
         for(ne_link* link : nodes[i]->links)
-            if(link->enabled) sum += link->weight * nodes[link->i]->value;
+            if(link->enabled) sum += link->weight * link->i->value;
         
         nodes[i]->value = 1.0 / (1.0 + exp(-sum));
     }
 }
 
-void ne_genome::mutate_add_node() {
+void ne_genome::mutate_add_node() {    
     ne_link* link = links[ne_random(0, links.size() - 1)];
     
     if(!link->enabled || link->i == 0) return;
     
-    size_t nid = nodes.size() - settings->output_size;
     ne_node* node = new ne_node();
     nodes.insert(nodes.end() - settings->output_size, node);
     
-    ne_link* link1 = new ne_link(link->i, nid);
+    ne_link* link1 = new ne_link(link->i, node);
     link1->enabled = true;
     link1->weight = 1.0;
     add(link1);
     
-    ne_link* link2 = new ne_link(nid, link->j);
+    ne_link* link2 = new ne_link(node, link->j);
     link2->enabled = true;
     link2->weight = link->weight;
     add(link2);
@@ -54,7 +53,7 @@ void ne_genome::mutate_add_node() {
 void ne_genome::mutate_add_link() {
     ne_uint size = nodes.size() - 1;
     
-    ne_link q(ne_random(0, size - settings->output_size), ne_random(settings->input_size, size));
+    ne_link q(nodes[ne_random(0, size - settings->output_size)], nodes[ne_random(settings->input_size, size)]);
     
     ne_link_set::iterator it = link_set.find(&q);
     if(it != link_set.end()) {

@@ -25,14 +25,16 @@ struct ne_genome
     
     inline ne_genome(const ne_genome& genome) {
         settings = genome.settings;
-        nodes.resize(genome.nodes.size());
         
-        for(ne_node*& node : nodes)
-            node = new ne_node();
+        for(ne_node* node : genome.nodes) {
+            ne_node* clone = new ne_node();
+            node->clone = clone;
+            nodes.push_back(clone);
+        }
         
         for(ne_link* link : genome.links) {
             if(!link->enabled) continue;
-            ne_link* clone = new ne_link(link->i, link->j);
+            ne_link* clone = new ne_link(link->i->clone, link->j->clone);
             clone->enabled = true;
             clone->weight = link->weight;
             add(clone);
@@ -58,8 +60,11 @@ struct ne_genome
             is.read((char*)&link->enabled, sizeof(link->enabled));
             is.read((char*)&link->weight, sizeof(link->weight));
             
+            link->i = nodes[(ne_uint)link->i];
+            link->j = nodes[(ne_uint)link->j];
+            
             link_set.insert(link);
-            nodes[link->j]->links.push_back(link);
+            link->j->links.push_back(link);
         }
     }
     
@@ -87,9 +92,9 @@ struct ne_genome
     void mutate_add_node();
     void mutate_add_link();
     
-    inline void adapt(double rate) {
+    inline void adapt(ne_float rate) {
         for(ne_link* link : links)
-            if(link->enabled) link->weight += rate * (nodes[link->i]->value - 0.5) * (nodes[link->j]->value - 0.5);
+            if(link->enabled) link->weight += rate * (link->i->value - 0.5) * (link->j->value - 0.5);
     }
     
     inline void mutate_weight() {
@@ -99,7 +104,7 @@ struct ne_genome
     inline void add(ne_link* link) {
         links.push_back(link);
         link_set.insert(link);
-        nodes[link->j]->links.push_back(link);
+        link->j->links.push_back(link);
     }
     
     inline void mutate() {
@@ -116,11 +121,16 @@ struct ne_genome
         size_t q;
         q = nodes.size();
         os.write((char*)&q, sizeof(q));
+        
+        for(ne_uint i = 0; i < q; ++i)
+            nodes[i]->clone = (ne_node*)i;
+        
         q = links.size();
         os.write((char*)&q, sizeof(q));
+        
         for(ne_link* link : links) {
-            os.write((char*)&link->i, sizeof(link->i));
-            os.write((char*)&link->j, sizeof(link->j));
+            os.write((char*)&link->i->clone, sizeof(link->i->clone));
+            os.write((char*)&link->j->clone, sizeof(link->j->clone));
             os.write((char*)&link->enabled, sizeof(link->enabled));
             os.write((char*)&link->weight, sizeof(link->weight));
         }

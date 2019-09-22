@@ -10,6 +10,7 @@
 #define population_h
 
 #include "genome.h"
+#include <iostream>
 
 struct ne_population
 {
