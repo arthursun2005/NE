@@ -22,19 +22,17 @@ struct ne_genome
     ne_link_set link_set;
     
     ne_settings* settings;
-        
+    
     inline ne_genome(const ne_genome& genome) {
         settings = genome.settings;
+        nodes.resize(genome.nodes.size());
         
-        for(ne_node* node : genome.nodes) {
-            ne_node* clone = new ne_node();
-            node->clone = clone;
-            nodes.push_back(clone);
-        }
+        for(ne_node*& node : nodes)
+            node = new ne_node();
         
         for(ne_link* link : genome.links) {
             if(!link->enabled) continue;
-            ne_link* clone = new ne_link(link->i->clone, link->j->clone);
+            ne_link* clone = new ne_link(link->i, link->j);
             clone->enabled = true;
             clone->weight = link->weight;
             add(clone);
@@ -42,10 +40,27 @@ struct ne_genome
     }
     
     inline ne_genome(ne_settings* settings) : settings(settings) {
-        size_t q = settings->input_size + settings->output_size;
+        nodes.resize(settings->input_size + settings->output_size);
         
-        for(size_t i = 0; i != q; ++i)
-            nodes.push_back(new ne_node());
+        for(ne_node*& node : nodes)
+            node = new ne_node();
+    }
+    
+    inline ne_genome(std::ifstream& is) {
+        size_t q;
+        is.read((char*)&q, sizeof(q));
+        nodes.resize(q);
+        is.read((char*)&q, sizeof(q));
+        links.resize(q);
+        for(ne_link* link : links) {
+            is.read((char*)&link->i, sizeof(link->i));
+            is.read((char*)&link->j, sizeof(link->j));
+            is.read((char*)&link->enabled, sizeof(link->enabled));
+            is.read((char*)&link->weight, sizeof(link->weight));
+            
+            link_set.insert(link);
+            nodes[link->j]->links.push_back(link);
+        }
     }
     
     ne_genome& operator = (const ne_genome& genome) = delete;
@@ -74,7 +89,7 @@ struct ne_genome
     
     inline void adapt(double rate) {
         for(ne_link* link : links)
-            if(link->enabled) link->weight += 2.0 * rate * (link->i->value - 0.5) * link->weight;
+            if(link->enabled) link->weight += rate * (nodes[link->i]->value - 0.5) * (nodes[link->j]->value - 0.5);
     }
     
     inline void mutate_weight() {
@@ -84,7 +99,7 @@ struct ne_genome
     inline void add(ne_link* link) {
         links.push_back(link);
         link_set.insert(link);
-        link->j->links.push_back(link);
+        nodes[link->j]->links.push_back(link);
     }
     
     inline void mutate() {
@@ -98,10 +113,16 @@ struct ne_genome
     }
     
     inline void write(std::ofstream& os) const {
-        size_t q = nodes.size();
+        size_t q;
+        q = nodes.size();
+        os.write((char*)&q, sizeof(q));
+        q = links.size();
         os.write((char*)&q, sizeof(q));
         for(ne_link* link : links) {
-            os.write((char*)&link->i, sizeof(q));
+            os.write((char*)&link->i, sizeof(link->i));
+            os.write((char*)&link->j, sizeof(link->j));
+            os.write((char*)&link->enabled, sizeof(link->enabled));
+            os.write((char*)&link->weight, sizeof(link->weight));
         }
     }
     

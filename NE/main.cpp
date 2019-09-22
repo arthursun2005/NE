@@ -102,12 +102,7 @@ struct Pendulum
             ne_float f1 = std::max(cos(a), 0.0);
             ne_float f2 = (xt - fabs(x)) / xt;
             
-            //fitness += f1 + (f1 * f2);
-            if(a < 0.2 && a > -0.2) {
-                fitness += 2.0;
-            }else{
-                break;
-            }
+            fitness += f1 + (f1 * f2);
             
             if(p) {
                 std::cout << x << ", " << a << ", " << std::endl;
@@ -440,6 +435,7 @@ struct DIR
             
             gen->flush();
             gen->activate();
+            //gen->adapt(0.0001);
             
             d = outputs[0]->value * 2.0 - 1.0 - cos(a);
             fitness += (1.0 - d * d) * 0.5;
@@ -488,7 +484,7 @@ struct GOL
 
 struct HANDDIGITS
 {
-    static const ne_uint input_size = 14 * 14 + 1;
+    static const ne_uint input_size = 28 * 28 + 1;
     static const ne_uint output_size = 10;
     
     ne_float fitness;
@@ -539,16 +535,8 @@ struct HANDDIGITS
     void load_image(int idx, ne_node** inputs) {
         int q = w * h;
         int a = idx * q;
-        //for(int i = 0; i < q; ++i) {
-        //    inputs[i]->value = images[a + i] / 0x1p8;
-        //}
-        
-        unsigned char* p = images + a;
-        for(int x = 0; x < 14; ++x) {
-            for(int y = 0; y < 14; ++y) {
-                int id = 2 * x + 2 * y * w;
-                inputs[x + y * 14]->value = 0.25 * (p[id] + p[1 + id] + p[w + id] + p[1 + w + id]) / 0x1p8;
-            }
+        for(int i = 0; i < q; ++i) {
+            inputs[i]->value = images[a + i] / 0x1p8;
         }
     }
     
@@ -558,7 +546,7 @@ struct HANDDIGITS
         ne_node** inputs = gen->inputs();
         ne_node** outputs = gen->outputs();
         
-        int trials = 100;
+        int trials = 10;
         int correct = 0;
         
         for(int n = 0; n < trials; ++n) {
@@ -586,13 +574,12 @@ struct HANDDIGITS
             
             if(h == label) ++correct;
         }
-        
-        //fitness /= (ne_float)trials;
+
         fitness = correct;
     }
 };
 
-typedef HANDDIGITS obj_type;
+typedef DIR obj_type;
 
 void initialize() {
     std::ifstream is("settings.ne");
@@ -601,7 +588,6 @@ void initialize() {
     settings.input_size = obj_type::input_size;
     settings.output_size = obj_type::output_size;
     population = new ne_population(settings);
-    population->initialize();
 }
 
 int main(int argc, const char * argv[]) {

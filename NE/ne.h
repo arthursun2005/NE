@@ -40,25 +40,24 @@ struct ne_link;
 struct ne_node
 {
     ne_float value;
-    ne_node* clone;
     std::vector<ne_link*> links;
 };
 
 struct ne_link
 {
-    ne_node* i;
-    ne_node* j;
+    size_t i;
+    size_t j;
     
     bool enabled;
     ne_float weight;
     
-    ne_link(ne_node* i, ne_node* j) : i(i), j(j) {}
+    ne_link(size_t i, size_t j) : i(i), j(j) {}
 };
 
 struct ne_link_hash
 {
     inline ne_uint operator () (const ne_link* x) const {
-        return ((size_t)x->i ^ (size_t)x->j) + (size_t)x->j;
+        return (((x->i + x->j) * (x->i + x->j + 1)) >> 1) + x->j;
     }
 };
 
