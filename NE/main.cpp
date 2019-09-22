@@ -18,11 +18,10 @@ ne_population* population;
 
 int gens;
 ne_settings settings;
-ne_float best_score;
 
 struct Pendulum
 {
-    static const ne_uint input_size = 6;
+    static const ne_uint input_size = 4;
     static const ne_uint output_size = 1;
     
     ne_float x;
@@ -55,7 +54,7 @@ struct Pendulum
     void reset() {
         x = ne_random(-2.0, 2.0);
         vx = ne_random(-1.0, 1.0);
-        a = ne_random(-M_PI, M_PI);
+        a = 0.07;//M_PI * 0.5 + ne_random(0.0, M_PI);
         va = ne_random(-M_PI, M_PI);
     }
     
@@ -75,11 +74,9 @@ struct Pendulum
             double action = 0.0;
             
             inputs[0]->value = 1.0;
-            inputs[1]->value = x;
+            inputs[1]->value = x / xt;
             inputs[2]->value = c;
             inputs[3]->value = s;
-            inputs[4]->value = va;
-            inputs[5]->value = vx;
             
             gen->activate();
             
@@ -105,12 +102,19 @@ struct Pendulum
             ne_float f1 = std::max(cos(a), 0.0);
             ne_float f2 = (xt - fabs(x)) / xt;
             
-            fitness += f1 + (f1 * f2);
+            //fitness += f1 + (f1 * f2);
+            if(a < 0.2 && a > -0.2) {
+                fitness += 2.0;
+            }else{
+                break;
+            }
             
             if(p) {
                 std::cout << x << ", " << a << ", " << std::endl;
             }
         }
+        
+        fitness /= 2000.0;
     }
     
 };
@@ -411,8 +415,6 @@ struct Game2048
             }
         }
         
-        best_score = fmax(fitness, best_score);
-        
     }
 };
 
@@ -585,16 +587,17 @@ struct HANDDIGITS
             if(h == label) ++correct;
         }
         
-        best_score = fmax(correct, best_score);
-        
         //fitness /= (ne_float)trials;
         fitness = correct;
     }
 };
 
-typedef Pendulum obj_type;
+typedef HANDDIGITS obj_type;
 
 void initialize() {
+    std::ifstream is("settings.ne");
+    settings.read(is);
+    is.close();
     settings.input_size = obj_type::input_size;
     settings.output_size = obj_type::output_size;
     population = new ne_population(settings);
@@ -607,8 +610,6 @@ int main(int argc, const char * argv[]) {
         std::cout << "default number of generations: " << gens << std::endl;
     }else{
         gens = std::stoi(argv[1]);
-        
-        if(gens == -1) gens = 0x7fffffff;
     }
     
     initialize();
@@ -620,7 +621,6 @@ int main(int argc, const char * argv[]) {
     obj_type obj;
     
     for(int n = 0; n < gens; ++n) {
-        best_score = -FLT_MAX;
         for(ne_genome* g : population->genomes) {
             obj.run(g, false);
             g->fitness = obj.fitness;
@@ -628,22 +628,16 @@ int main(int argc, const char * argv[]) {
         
         best = population->analyse();
 
-        std::cout << n << " " << best->fitness << " " << best_score << std::endl;
+        std::cout << n << " " << best->fitness << std::endl;
         
         if(n == gens - 1) {
-            obj.run(best, true);
-            std::cout << "fitness: " << obj.fitness << std::endl;
-            
-            for(ne_node* node : best->nodes) {
-                std::cout << "node: " << node->id << std::endl;
-                for(ne_link* link : node->links) {
-                    std::cout << "link: " << link->weight << " " << link->i->id << std::endl;
-                }
-                std::cout << std::endl;
+            for(int q = 0; q < 1000; ++q) {
+                obj.run(best, false);
+                std::cout << "fitness: " << obj.fitness << std::endl;
             }
         }
         
-        highs.push_back(best_score);
+        highs.push_back(best->fitness);
         
         population->reproduce();
     }

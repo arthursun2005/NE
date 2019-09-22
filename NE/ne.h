@@ -16,24 +16,9 @@
 #include <cmath>
 #include <functional>
 #include <cfloat>
-#include <iostream>
 
-typedef float float32;
-typedef double float64;
-
-typedef unsigned char uint8;
-typedef unsigned short uint16;
-typedef unsigned int uint32;
-typedef unsigned long uint64;
-
-#define ne_function(x) (1.0 / (1.0 + exp(-x)))
-
-#define ne_half_nodes (1llu << 63)
-
-#define ne_hash(i, j) ((((i + j) * (i + j + 1)) >> 1) + j)
-
-typedef float64 ne_float;
-typedef uint64 ne_uint;
+typedef double ne_float;
+typedef unsigned long ne_uint;
 typedef std::mt19937_64 ne_generator_type;
 
 static ne_generator_type ne_generator = ne_generator_type(std::chrono::high_resolution_clock::now().time_since_epoch().count());
@@ -55,15 +40,8 @@ struct ne_link;
 struct ne_node
 {
     ne_float value;
-    
-    bool active;
-    bool activated;
-    ne_uint id;
-    
     ne_node* clone;
     std::vector<ne_link*> links;
-    
-    ne_node(ne_uint id) : id(id) {}
 };
 
 struct ne_link
@@ -71,31 +49,23 @@ struct ne_link
     ne_node* i;
     ne_node* j;
     
-    ne_uint id;
+    bool enabled;
     ne_float weight;
     
     ne_link(ne_node* i, ne_node* j) : i(i), j(j) {}
-    
-    inline bool enabled() const {
-        return weight != 0.0;
-    }
-    
-    inline void disable() {
-        weight = 0.0;
-    }
 };
 
 struct ne_link_hash
 {
     inline ne_uint operator () (const ne_link* x) const {
-        return ne_hash(x->i->id, x->j->id);
+        return ((size_t)x->i ^ (size_t)x->j) + (size_t)x->j;
     }
 };
 
 struct ne_link_equal
 {
     inline bool operator () (const ne_link* a, const ne_link* b) const {
-        return a->i->id == b->i->id && a->j->id == b->j->id;
+        return a->i == b->i && a->j == b->j;
     }
 };
 
@@ -106,23 +76,13 @@ struct ne_settings
     ne_float mutate_add_node_prob;
     ne_float mutate_add_link_prob;
     
-    ne_float mate_prob;
-    
-    ne_uint node_ids;
-    ne_uint link_ids;
     ne_uint population;
     
     ne_uint input_size;
     ne_uint output_size;
     
-    ne_settings() {
-        mutate_add_node_prob = 0.01;
-        mutate_add_link_prob = 0.2;
-        
-        mate_prob = 0.5;
-        
-        link_ids = 0;
-        population = 256;
+    inline void read(std::ifstream& is) {
+        is >> mutate_add_node_prob >> mutate_add_link_prob >> population;
     }
 };
 

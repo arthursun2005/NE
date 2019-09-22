@@ -40,7 +40,11 @@ struct ne_population
     ne_genome* analyse();
     void reproduce();
     
-    ne_genome* breed(ne_uint i);
+    inline ne_genome* breed(ne_genome* g) {
+        ne_genome* baby = new ne_genome(*g);
+        baby->mutate();
+        return baby;
+    }
     
 };
 

@@ -1,0 +1,46 @@
+#IncludeRegexLine: ^[ 	]*[#%][ 	]*(include|import)[ 	]*[<"]([^">]+)([">])
+
+#IncludeRegexScan: ^.*$
+
+#IncludeRegexComplain: ^$
+
+#IncludeRegexTransform: 
+
+/Users/arthur/work/code/NE/NE/genome.h
+ne.h
+/Users/arthur/work/code/NE/NE/ne.h
+vector
+-
+
+/Users/arthur/work/code/NE/NE/main.cpp
+iostream
+-
+iomanip
+-
+population.h
+/Users/arthur/work/code/NE/NE/population.h
+
+/Users/arthur/work/code/NE/NE/ne.cpp
+population.h
+/Users/arthur/work/code/NE/NE/population.h
+
+/Users/arthur/work/code/NE/NE/ne.h
+vector
+-
+fstream
+-
+random
+-
+unordered_set
+-
+cmath
+-
+functional
+-
+cfloat
+-
+
+/Users/arthur/work/code/NE/NE/population.h
+genome.h
+/Users/arthur/work/code/NE/NE/genome.h
+

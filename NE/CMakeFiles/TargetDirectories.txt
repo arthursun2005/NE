@@ -1,0 +1,3 @@
+/Users/arthur/work/code/NE/NE/CMakeFiles/rebuild_cache.dir
+/Users/arthur/work/code/NE/NE/CMakeFiles/edit_cache.dir
+/Users/arthur/work/code/NE/NE/CMakeFiles/NE.dir
