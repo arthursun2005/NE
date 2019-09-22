@@ -26,15 +26,16 @@ struct ne_genome
     inline ne_genome(const ne_genome& genome) {
         settings = genome.settings;
         
-        for(ne_node* node : genome.nodes) {
-            ne_node* clone = new ne_node();
-            node->clone = clone;
-            nodes.push_back(clone);
+        ne_uint size = genome.nodes.size();
+        nodes.resize(size);
+        for(ne_uint i = 0; i < size; ++i) {
+            nodes[i] = new ne_node();
+            genome.nodes[i]->clone = i;
         }
         
         for(ne_link* link : genome.links) {
             if(!link->enabled) continue;
-            ne_link* clone = new ne_link(link->i->clone, link->j->clone);
+            ne_link* clone = new ne_link(nodes[link->i->clone], nodes[link->j->clone]);
             clone->enabled = true;
             clone->weight = link->weight;
             add(clone);
@@ -49,19 +50,20 @@ struct ne_genome
     }
     
     inline ne_genome(std::ifstream& is) {
-        size_t q;
+        ne_uint q;
         is.read((char*)&q, sizeof(q));
         nodes.resize(q);
         is.read((char*)&q, sizeof(q));
         links.resize(q);
+        ne_uint i, j;
         for(ne_link* link : links) {
-            is.read((char*)&link->i, sizeof(link->i));
-            is.read((char*)&link->j, sizeof(link->j));
+            is.read((char*)&i, sizeof(i));
+            is.read((char*)&j, sizeof(j));
             is.read((char*)&link->enabled, sizeof(link->enabled));
             is.read((char*)&link->weight, sizeof(link->weight));
             
-            link->i = nodes[(ne_uint)link->i];
-            link->j = nodes[(ne_uint)link->j];
+            link->i = nodes[i];
+            link->j = nodes[j];
             
             link_set.insert(link);
             link->j->links.push_back(link);
@@ -118,12 +120,12 @@ struct ne_genome
     }
     
     inline void write(std::ofstream& os) const {
-        size_t q;
+        ne_uint q;
         q = nodes.size();
         os.write((char*)&q, sizeof(q));
         
         for(ne_uint i = 0; i < q; ++i)
-            nodes[i]->clone = (ne_node*)i;
+            nodes[i]->clone = i;
         
         q = links.size();
         os.write((char*)&q, sizeof(q));

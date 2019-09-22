@@ -17,9 +17,9 @@ void ne_genome::flush() {
 }
 
 void ne_genome::activate() {
-    size_t size = nodes.size();
+    ne_uint size = nodes.size();
     
-    for(size_t i = settings->input_size; i != size; ++i) {
+    for(ne_uint i = settings->input_size; i != size; ++i) {
         ne_float sum = 0.0;
         
         for(ne_link* link : nodes[i]->links)

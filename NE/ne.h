@@ -40,7 +40,7 @@ struct ne_link;
 struct ne_node
 {
     ne_float value;
-    ne_node* clone;
+    ne_uint clone;
     std::vector<ne_link*> links;
 };
 
