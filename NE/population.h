@@ -9,7 +9,7 @@
 #ifndef population_h
 #define population_h
 
-#include "brain.h"
+#include "genome.h"
 #include <iostream>
 
 struct ne_settings {
@@ -22,52 +22,6 @@ struct ne_settings {
     
     void read(std::ifstream& is) {
         is >> mutate_add_prob >> population;
-    }
-};
-
-struct ne_genome {
-    ne_brain brain;
-    double fitness;
-    
-    ne_genome(const ne_genome& genome) : brain(genome.brain), fitness(genome.fitness) {
-    }
-    
-    ne_genome(size_t input_size, size_t output_size) : brain(input_size, output_size) {
-    }
-    
-    ne_genome(std::ifstream& is) : brain(is) {
-    }
-    
-    ne_node** inputs() {
-        return brain.inputs();
-    }
-    
-    ne_node** outputs() {
-        return brain.outputs();
-    }
-    
-    void flush() {
-        brain.flush();
-    }
-    
-    void activate() {
-        brain.activate();
-    }
-    
-    void adapt(double rate) {
-        brain.adapt(rate);
-    }
-    
-    void mutate_weight() {
-        brain.mutate_weight();
-    }
-    
-    void mutate(double mutate_add_prob) {
-        brain.mutate(mutate_add_prob);
-    }
-    
-    void write(std::ofstream& os) const {
-        brain.write(os);
     }
 };
 

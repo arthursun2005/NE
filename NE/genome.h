@@ -1,18 +1,19 @@
 //
-//  brain.h
+//  genome.h
 //  NE
 //
 //  Created by Arthur Sun on 8/24/19.
 //  Copyright © 2019 Arthur Sun. All rights reserved.
 //
 
-#ifndef brain_h
-#define brain_h
+#ifndef genome_h
+#define genome_h
 
 #include "ne.h"
-#include <vector>
 
-struct ne_brain {
+struct ne_genome {
+    double fitness;
+    
     std::vector<ne_node*> nodes;
     std::vector<ne_link*> links;
     
@@ -21,15 +22,15 @@ struct ne_brain {
     size_t input_size;
     size_t output_size;
     
-    ne_brain(const ne_brain& brain) : input_size(brain.input_size), output_size(brain.output_size) {
-        size_t size = brain.nodes.size();
+    ne_genome(const ne_genome& genome) : input_size(genome.input_size), output_size(genome.output_size) {
+        size_t size = genome.nodes.size();
         nodes.resize(size);
         for(size_t i = 0; i != size; ++i) {
             nodes[i] = new ne_node();
-            brain.nodes[i]->clone = i;
+            genome.nodes[i]->clone = i;
         }
         
-        for(ne_link* link : brain.links) {
+        for(ne_link* link : genome.links) {
             if(link->weight == 0.0) continue;
             ne_link* clone = new ne_link(nodes[link->i->clone], nodes[link->j->clone]);
             clone->weight = link->weight;
@@ -37,7 +38,7 @@ struct ne_brain {
         }
     }
     
-    ne_brain(size_t input_size, size_t output_size) : input_size(input_size), output_size(output_size) {
+    ne_genome(size_t input_size, size_t output_size) : input_size(input_size), output_size(output_size) {
         nodes.resize(input_size + output_size);
         
         for(ne_node*& node : nodes)
@@ -46,7 +47,7 @@ struct ne_brain {
         mutate_add_link();
     }
     
-    ne_brain(std::ifstream& is) {
+    ne_genome(std::ifstream& is) {
         size_t q;
         is.read((char*)&q, sizeof(q));
         nodes.resize(q);
@@ -66,9 +67,9 @@ struct ne_brain {
         }
     }
     
-    ne_brain& operator = (const ne_brain& brain) = delete;
+    ne_genome& operator = (const ne_genome& genome) = delete;
     
-    ~ne_brain() {
+    ~ne_genome() {
         for(ne_link* link : links)
             delete link;
         
@@ -182,4 +183,4 @@ struct ne_brain {
     }
 };
 
-#endif /* brain_h */
+#endif /* genome_h */

@@ -28,7 +28,7 @@
 		8E99F088230FFA7C0051D8D9 /* NE */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = NE; sourceTree = BUILT_PRODUCTS_DIR; };
 		8E99F08B230FFA7C0051D8D9 /* main.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = main.cpp; sourceTree = "<group>"; };
 		8E99F092230FFA8D0051D8D9 /* ne.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = ne.h; sourceTree = "<group>"; };
-		8E99F09623108DF70051D8D9 /* brain.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = brain.h; sourceTree = "<group>"; };
+		8E99F09623108DF70051D8D9 /* genome.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = genome.h; sourceTree = "<group>"; };
 		8E99F099231091540051D8D9 /* population.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = population.h; sourceTree = "<group>"; };
 		8EF7C7452335FDCD0096EDC0 /* settings.ne */ = {isa = PBXFileReference; lastKnownFileType = text; path = settings.ne; sourceTree = "<group>"; };
 /* End PBXFileReference section */
@@ -65,7 +65,7 @@
 			children = (
 				8E99F08B230FFA7C0051D8D9 /* main.cpp */,
 				8E99F099231091540051D8D9 /* population.h */,
-				8E99F09623108DF70051D8D9 /* brain.h */,
+				8E99F09623108DF70051D8D9 /* genome.h */,
 				8E99F092230FFA8D0051D8D9 /* ne.h */,
 				8EF7C7452335FDCD0096EDC0 /* settings.ne */,
 				8E1E71F5232F903A00E48057 /* train-images-idx3-ubyte */,
