@@ -19,27 +19,30 @@ ne_population* population;
 int gens;
 ne_settings settings;
 
+int pe = 16;
+int tr = 256;
+
 struct Pendulum
 {
-    static const ne_uint input_size = 4;
-    static const ne_uint output_size = 1;
+    static const size_t input_size = 4;
+    static const size_t output_size = 1;
     
-    ne_float x;
-    ne_float vx;
-    ne_float a;
-    ne_float va;
+    float x;
+    float vx;
+    float a;
+    float va;
     
-    ne_float g;
-    ne_float m_c;
-    ne_float m_p;
-    ne_float m;
-    ne_float l;
-    ne_float f;
-    ne_float b;
+    float g;
+    float m_c;
+    float m_p;
+    float m;
+    float l;
+    float f;
+    float b;
     
-    ne_float xt = 10.0;
+    float xt = 10.0;
     
-    ne_float fitness;
+    float fitness;
     
     Pendulum() {
         g = 9.8;
@@ -53,8 +56,8 @@ struct Pendulum
     
     void reset() {
         x = ne_random(-2.0, 2.0);
-        vx = ne_random(-1.0, 1.0);
-        a = 0.07;//M_PI * 0.5 + ne_random(0.0, M_PI);
+        vx = ne_random(-4.0, 4.0);
+        a = 0.1;
         va = ne_random(-M_PI, M_PI);
     }
     
@@ -68,10 +71,10 @@ struct Pendulum
         ne_node** outputs = gen->outputs();
         
         for(int i = 0; i < time_limit; ++i) {
-            double c = cos(a);
-            double s = sin(a);
+            float c = cos(a);
+            float s = sin(a);
             
-            double action = 0.0;
+            float action = 0.0;
             
             inputs[0]->value = 1.0;
             inputs[1]->value = x / xt;
@@ -84,11 +87,11 @@ struct Pendulum
             
             action *= f;
             
-            double va2 = va * va;
-            double c2 = c * c;
+            float va2 = va * va;
+            float c2 = c * c;
 
-            double vva = (g * m * s + c * (action - m_p * l * va2 * s - b * vx))/(l * (m - m_p * c2));
-            double vvx = (action + m_p * l * (vva * c - va2 * s) - b * vx) / m;
+            float vva = (g * m * s + c * (action - m_p * l * va2 * s - b * vx))/(l * (m - m_p * c2));
+            float vvx = (action + m_p * l * (vva * c - va2 * s) - b * vx) / m;
             
             vx = vx + vvx * time_step;
             va = va + vva * time_step;
@@ -99,13 +102,13 @@ struct Pendulum
             if(x < -xt || x > xt)
                 break;
             
-            ne_float f1 = std::max(cos(a), 0.0);
-            ne_float f2 = (xt - fabs(x)) / xt;
+            float f1 = fmax(cos(a), 0.0);
+            float f2 = (xt - fabs(x)) / xt;
             
             fitness += f1 + (f1 * f2);
             
             if(p) {
-                std::cout << x << ", " << a << ", " << std::endl;
+                std::cout << x << ", " << a << ", " << '\n';
             }
         }
         
@@ -117,10 +120,10 @@ struct Pendulum
 
 struct XOR
 {
-    static const ne_uint input_size = 3;
-    static const ne_uint output_size = 1;
+    static const size_t input_size = 3;
+    static const size_t output_size = 1;
     
-    ne_float fitness;
+    float fitness;
     
     void run(ne_genome* gen, bool p) {
         fitness = 0.0;
@@ -139,11 +142,11 @@ struct XOR
                 gen->flush();
                 gen->activate();
                 
-                double d = outputs[0]->value - c;
+                float d = outputs[0]->value - c;
                 fitness += 1.0 - d * d;
                 
                 if(p) {
-                    std::cout << outputs[0]->value << std::endl;
+                    std::cout << outputs[0]->value << '\n';
                 }
             }
         }
@@ -154,14 +157,14 @@ struct XOR
 
 struct Game2048
 {
-    static const ne_uint input_size = 17;
-    static const ne_uint output_size = 4;
+    static const size_t input_size = 17;
+    static const size_t output_size = 4;
     
-    ne_float fitness;
+    float fitness;
     
-    ne_uint grid[16];
+    size_t grid[16];
     
-    inline ne_uint& get(int x, int y) {
+    inline size_t& get(int x, int y) {
         return grid[x + y * 4];
     }
     
@@ -179,18 +182,18 @@ struct Game2048
             if(grid[i] == 0) idx.push_back(i);
         }
         
-        grid[idx[ne_random() % idx.size()]] = ne_random(0.0, 1.0) < 0.9 ? 2 : 4;
+        grid[idx[ne_random(0lu, idx.size() - 1)]] = ne_random(0.0, 1.0) < 0.9 ? 2 : 4;
     }
     
-    ne_uint move_left(bool& moved) {
-        ne_uint score = 0;
+    size_t move_left(bool& moved) {
+        size_t score = 0;
         for(int y = 0; y < 4; ++y) {
             for(int x = 0; x < 4; ++x) {
-                ne_uint v1 = get(x, y);
+                size_t v1 = get(x, y);
                 if(v1 == 0) continue;
                 
                 for(int i = x + 1; i < 4; ++i) {
-                    ne_uint v2 = get(i, y);
+                    size_t v2 = get(i, y);
                     if(v1 == v2) {
                         score += v1 + v2;
                         moved = true;
@@ -217,15 +220,15 @@ struct Game2048
         return score;
     }
     
-    ne_uint move_right(bool& moved) {
-        ne_uint score = 0;
+    size_t move_right(bool& moved) {
+        size_t score = 0;
         for(int y = 0; y < 4; ++y) {
             for(int x = 3; x >= 0; --x) {
-                ne_uint v1 = get(x, y);
+                size_t v1 = get(x, y);
                 if(v1 == 0) continue;
                 
                 for(int i = x - 1; i >= 0; --i) {
-                    ne_uint v2 = get(i, y);
+                    size_t v2 = get(i, y);
                     if(v1 == v2) {
                         score += v1 + v2;
                         moved = true;
@@ -252,15 +255,15 @@ struct Game2048
         return score;
     }
     
-    ne_uint move_up(bool& moved) {
-        ne_uint score = 0;
+    size_t move_up(bool& moved) {
+        size_t score = 0;
         for(int x = 0; x < 4; ++x) {
             for(int y = 0; y < 4; ++y) {
-                ne_uint v1 = get(x, y);
+                size_t v1 = get(x, y);
                 if(v1 == 0) continue;
                 
                 for(int i = y + 1; i < 4; ++i) {
-                    ne_uint v2 = get(x, i);
+                    size_t v2 = get(x, i);
                     if(v1 == v2) {
                         score += v1 + v2;
                         moved = true;
@@ -287,15 +290,15 @@ struct Game2048
         return score;
     }
     
-    ne_uint move_down(bool& moved) {
-        ne_uint score = 0;
+    size_t move_down(bool& moved) {
+        size_t score = 0;
         for(int x = 0; x < 4; ++x) {
             for(int y = 3; y >= 0; --y) {
-                ne_uint v1 = get(x, y);
+                size_t v1 = get(x, y);
                 if(v1 == 0) continue;
                 
                 for(int i = y - 1; i >= 0; --i) {
-                    ne_uint v2 = get(x, i);
+                    size_t v2 = get(x, i);
                     if(v1 == v2) {
                         score += v1 + v2;
                         moved = true;
@@ -347,7 +350,7 @@ struct Game2048
                 std::cout << std::setw(5) << get(x, y) << " ";
             }
             
-            std::cout << std::endl;
+            std::cout << '\n';
         }
     }
     
@@ -364,7 +367,7 @@ struct Game2048
             
             if(p) {
                 print();
-                std::cout << std::endl;
+                std::cout << '\n';
             }
             
             if(m == 1) {
@@ -387,21 +390,21 @@ struct Game2048
                 
                 bool moved = false;
                 
-                ne_uint i = 0;
+                size_t i = 0;
                 while(!moved) {
                     int c = choices[i];
                     if(c == 0) {
                         fitness += move_up(moved);
-                        if(p) std::cout << "up" << std::endl;
+                        if(p) std::cout << "up" << '\n';
                     }else if(c == 1) {
                         fitness += move_down(moved);
-                        if(p) std::cout << "down" << std::endl;
+                        if(p) std::cout << "down" << '\n';
                     }else if(c == 2) {
                         fitness += move_left(moved);
-                        if(p) std::cout << "left" << std::endl;
+                        if(p) std::cout << "left" << '\n';
                     }else{
                         fitness += move_right(moved);
-                        if(p) std::cout << "right" << std::endl;
+                        if(p) std::cout << "right" << '\n';
                     }
                     ++i;
                 }
@@ -415,10 +418,10 @@ struct Game2048
 
 struct DIR
 {
-    static const ne_uint input_size = 2;
-    static const ne_uint output_size = 2;
+    static const size_t input_size = 2;
+    static const size_t output_size = 2;
     
-    ne_float fitness;
+    float fitness;
     
     void run(ne_genome* gen, bool p) {
         fitness = 0.0;
@@ -426,67 +429,35 @@ struct DIR
         ne_node** inputs = gen->inputs();
         ne_node** outputs = gen->outputs();
         
-        ne_float a = 0.0;
-        ne_uint q = 200;
-        ne_float d;
-        for(ne_uint n = 0; n < q; ++n) {
+        float a = 0.0;
+        size_t q = 200;
+        float d;
+        for(size_t n = 0; n < q; ++n) {
             inputs[0]->value = 1.0;
             inputs[1]->value = a;
             
             gen->flush();
             gen->activate();
             
-            d = outputs[0]->value * 2.0 - 1.0 - cos(a);
+            d = outputs[0]->value - cos(a);
             fitness += (1.0 - d * d) * 0.5;
             
-            d = outputs[1]->value * 2.0 - 1.0 - sin(a);
+            d = outputs[1]->value - sin(a);
             fitness += (1.0 - d * d) * 0.5;
             
             a += 0.05;
         }
         
-        fitness /= (ne_float) q;
-    }
-};
-
-struct GOL
-{
-    static const ne_uint input_size = 2;
-    static const ne_uint output_size = 1;
-    
-    ne_float fitness;
-    
-    void run(ne_genome* gen, bool p) {
-        fitness = 0.0;
-        
-        ne_node** inputs = gen->inputs();
-        ne_node** outputs = gen->outputs();
-        
-        for(ne_uint a = 0; a <= 8; ++a) {
-            inputs[0]->value = 1.0;
-            inputs[1]->value = a;
-            
-            gen->flush();
-            gen->activate();
-            
-            ne_float d = outputs[0]->value - (a == 1 ? 1.0 : 0.0);
-            fitness += 1.0 - d * d;
-            
-            if(p) {
-                std::cout << outputs[0]->value << std::endl;
-            }
-        }
-        
-        fitness /= (ne_float) 9;
+        fitness /= (float) q;
     }
 };
 
 struct HANDDIGITS
 {
-    static const ne_uint input_size = 28 * 28 + 1;
-    static const ne_uint output_size = 10;
+    static const size_t input_size = 28 * 28 + 1;
+    static const size_t output_size = 10;
     
-    ne_float fitness;
+    float fitness;
     
     unsigned char* images;
     unsigned char* labels;
@@ -545,11 +516,11 @@ struct HANDDIGITS
         ne_node** inputs = gen->inputs();
         ne_node** outputs = gen->outputs();
         
-        int trials = 10;
+        int trials = 100;
         int correct = 0;
         
         for(int n = 0; n < trials; ++n) {
-            int i = (int)ne_random(0, (ne_uint)k - 1);
+            int i = (int)ne_random(0, k - 1);
             int label = labels[i];
             inputs[0]->value = 1.0;
             load_image(i, inputs + 1);
@@ -559,8 +530,8 @@ struct HANDDIGITS
             
             int h = 0;
             for(int j = 0; j < 10; ++j) {
-                ne_float expected = label == j ? 1.0 : 0.0;
-                ne_float d = outputs[j]->value - expected;
+                float expected = label == j ? 1.0 : 0.0;
+                float d = outputs[j]->value - expected;
                 fitness += (1.0 - d * d) * 0.1;
                 
                 if(outputs[j]->value > outputs[h]->value)
@@ -569,7 +540,7 @@ struct HANDDIGITS
                 if(p) std::cout << outputs[j]->value << " ";
             }
             
-            if(p) std::cout << "label: " << label << std::endl;
+            if(p) std::cout << "label: " << label << '\n';
             
             if(h == label) ++correct;
         }
@@ -584,15 +555,13 @@ void initialize() {
     std::ifstream is("settings.ne");
     settings.read(is);
     is.close();
-    settings.input_size = obj_type::input_size;
-    settings.output_size = obj_type::output_size;
-    population = new ne_population(settings);
+    population = new ne_population(settings, obj_type::input_size, obj_type::output_size);
 }
 
 int main(int argc, const char * argv[]) {
     if(argc == 1) {
         gens = 0x7fffffff;
-        std::cout << "default number of generations: " << gens << std::endl;
+        std::cout << "default number of generations: " << gens << '\n';
     }else{
         gens = std::stoi(argv[1]);
     }
@@ -601,7 +570,7 @@ int main(int argc, const char * argv[]) {
     
     ne_genome* best = nullptr;
     
-    std::vector<ne_float> highs;
+    std::vector<float> highs;
     
     obj_type obj;
     
@@ -613,13 +582,15 @@ int main(int argc, const char * argv[]) {
         
         best = population->analyse();
 
-        std::cout << n << " " << best->fitness << std::endl;
+        std::cout << n << " " << best->fitness << '\n';
         
-        if(n == gens - 1) {
-            for(int q = 0; q < 1000; ++q) {
-                obj.run(best, false);
-                std::cout << "fitness: " << obj.fitness << std::endl;
+        if((n%pe) == (pe - 1)) {
+            float f = 0.0;
+            for(int q = 0; q != tr; ++q) {
+                obj.run(best, n == gens - 1);
+                f += obj.fitness;
             }
+            std::cout << "fitness: " << f / (float) tr << '\n';
         }
         
         highs.push_back(best->fitness);
@@ -627,10 +598,10 @@ int main(int argc, const char * argv[]) {
         population->reproduce();
     }
     
-    std::cout << "Highs: " << std::endl;
+    std::cout << "Highs: " << '\n';
     
-    for(ne_uint i = 0; i < gens; ++i) {
-        std::cout << i << "\t" << highs[i] << std::endl;
+    for(size_t i = 0; i < gens; ++i) {
+        std::cout << i << "\t" << highs[i] << '\n';
     }
     
     delete population;

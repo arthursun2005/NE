@@ -9,35 +9,91 @@
 #ifndef population_h
 #define population_h
 
-#include "genome.h"
+#include "brain.h"
 #include <iostream>
 
-struct ne_population
-{
-    ne_float average_fitness;
+struct ne_settings {
+    double mutate_add_prob;
+    size_t population;
+    
+    ne_settings() {}
+    
+    ne_settings(double mutate_add_prob, size_t population) : mutate_add_prob(mutate_add_prob), population(population) {}
+    
+    void read(std::ifstream& is) {
+        is >> mutate_add_prob >> population;
+    }
+};
+
+struct ne_genome {
+    ne_brain brain;
+    double fitness;
+    
+    ne_genome(const ne_genome& genome) : brain(genome.brain), fitness(genome.fitness) {
+    }
+    
+    ne_genome(size_t input_size, size_t output_size) : brain(input_size, output_size) {
+    }
+    
+    ne_genome(std::ifstream& is) : brain(is) {
+    }
+    
+    ne_node** inputs() {
+        return brain.inputs();
+    }
+    
+    ne_node** outputs() {
+        return brain.outputs();
+    }
+    
+    void flush() {
+        brain.flush();
+    }
+    
+    void activate() {
+        brain.activate();
+    }
+    
+    void adapt(double rate) {
+        brain.adapt(rate);
+    }
+    
+    void mutate_weight() {
+        brain.mutate_weight();
+    }
+    
+    void mutate(double mutate_add_prob) {
+        brain.mutate(mutate_add_prob);
+    }
+    
+    void write(std::ofstream& os) const {
+        brain.write(os);
+    }
+};
+
+struct ne_population {
+    double average_fitness;
     
     ne_settings settings;
     std::vector<ne_genome*> genomes;
     
-    inline ne_population(const ne_settings& _settings) : settings(_settings) {
+    ne_population(const ne_settings& _settings, size_t input_size, size_t output_size) : settings(_settings) {
         genomes.resize(settings.population);
         
         for(ne_genome*& g : genomes) {
-            g = new ne_genome(&settings);
-            g->mutate_add_link();
+            g = new ne_genome(input_size, output_size);
         }
     }
     
-    inline ne_population(const ne_population& population) : settings(population.settings) {
+    ne_population(const ne_population& population) : settings(population.settings) {
         genomes.resize(settings.population);
         
-        for(ne_uint i = 0; i != settings.population; ++i) {
+        for(size_t i = 0; i != settings.population; ++i) {
             genomes[i] = new ne_genome(*population.genomes[i]);
-            genomes[i]->settings = &settings;
         }
     }
     
-    inline ne_population(std::ifstream& is) {
+    ne_population(std::ifstream& is) {
         is.read((char*)&settings, sizeof(settings));
         genomes.resize(settings.population);
         for(ne_genome*& g : genomes)
@@ -46,21 +102,60 @@ struct ne_population
     
     ne_population& operator = (const ne_population& population) = delete;
     
-    inline ~ne_population() {
+    ~ne_population() {
         for(ne_genome* g : genomes)
             delete g;
     }
     
-    ne_genome* analyse();
-    void reproduce();
+    ne_genome* analyse() {
+        average_fitness = 0.0;
+        
+        for(ne_genome* g : genomes) {
+            g->fitness = fmax(0.0, g->fitness);
+            average_fitness += g->fitness;
+        }
+        
+        average_fitness /= (double) settings.population;
+        
+        std::sort(genomes.begin(), genomes.end(), [] (ne_genome* a, ne_genome* b) {
+            return a->fitness > b->fitness;
+        });
+        
+        return genomes.front();
+    }
     
-    inline ne_genome* breed(ne_genome* g) {
+    void reproduce() {
+        std::vector<ne_genome*> babies;
+        
+        if(average_fitness != 0.0) {
+            for(ne_genome* g : genomes) {
+                size_t offsprings = (size_t)floor(g->fitness / average_fitness);
+                
+                for(size_t n = 0; n != offsprings; ++n)
+                    babies.push_back(breed(g));
+            }
+        }
+        
+        size_t leftover = settings.population - babies.size();
+        for(ne_genome* g : genomes) {
+            if(leftover <= 0) break;
+            babies.push_back(breed(g));
+            --leftover;
+        }
+        
+        for(ne_genome* g : genomes)
+            delete g;
+        
+        genomes = babies;
+    }
+    
+    ne_genome* breed(ne_genome* g) {
         ne_genome* baby = new ne_genome(*g);
-        baby->mutate();
+        baby->mutate(settings.mutate_add_prob);
         return baby;
     }
     
-    inline void write(std::ofstream& os) const {
+    void write(std::ofstream& os) const {
         os.write((char*)&settings, sizeof(settings));
         for(ne_genome* g : genomes)
             g->write(os);
