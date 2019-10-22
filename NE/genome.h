@@ -34,6 +34,7 @@ struct ne_genome {
             if(link->weight == 0.0) continue;
             ne_link* clone = new ne_link(nodes[link->i->clone], nodes[link->j->clone]);
             clone->weight = link->weight;
+            clone->id = link->id;
             add(clone);
         }
     }
@@ -43,8 +44,6 @@ struct ne_genome {
         
         for(ne_node*& node : nodes)
             node = new ne_node();
-
-        mutate_add_link();
     }
     
     ne_genome(std::ifstream& is) {
@@ -57,6 +56,7 @@ struct ne_genome {
         for(ne_link* link : links) {
             is.read((char*)&i, sizeof(i));
             is.read((char*)&j, sizeof(j));
+            is.read((char*)&link->id, sizeof(link->id));
             is.read((char*)&link->weight, sizeof(link->weight));
             
             link->i = nodes[i];
@@ -106,7 +106,7 @@ struct ne_genome {
         }
     }
     
-    void mutate_add_node() {
+    void mutate_add_node(size_t* link_ids) {
         ne_link* link = links[ne_random(0lu, links.size() - 1)];
         
         if(link->weight == 0.0 || link->i == 0) return;
@@ -116,26 +116,31 @@ struct ne_genome {
         
         ne_link* link1 = new ne_link(link->i, node);
         link1->weight = 1.0;
+        link1->id = (*link_ids)++;
         add(link1);
         
         ne_link* link2 = new ne_link(node, link->j);
         link2->weight = link->weight;
+        link2->id = (*link_ids)++;
         add(link2);
         
         link->weight = 0.0;
     }
     
-    void mutate_add_link() {
+    void mutate_add_link(size_t* link_ids) {
         size_t size = nodes.size() - 1;
         
         ne_link q(nodes[ne_random(0lu, size - output_size)], nodes[ne_random(input_size, size)]);
         
         ne_link_set::iterator it = link_set.find(&q);
         if(it != link_set.end()) {
-            (*it)->weight += ne_random(-2.0, 2.0);
+            if((*it)->weight == 0.0) {
+                (*it)->weight = ne_random(-2.0, 2.0);
+            }
         }else{
             ne_link* link = new ne_link(q);
             link->weight = ne_random(-2.0, 2.0);
+            link->id = (*link_ids)++;
             add(link);
         }
     }
@@ -155,13 +160,13 @@ struct ne_genome {
         link->j->links.push_back(link);
     }
     
-    void mutate(double mutate_add_prob) {
+    void mutate(double mutate_add_prob, size_t* link_ids) {
         mutate_weight();
         
         if(ne_random(0.0, 1.0) < mutate_add_prob)
-            mutate_add_node();
+            mutate_add_node(link_ids);
         
-        mutate_add_link();
+        mutate_add_link(link_ids);
     }
     
     void write(std::ofstream& os) const {
@@ -178,6 +183,7 @@ struct ne_genome {
         for(ne_link* link : links) {
             os.write((char*)&link->i->clone, sizeof(link->i->clone));
             os.write((char*)&link->j->clone, sizeof(link->j->clone));
+            os.write((char*)&link->id, sizeof(link->id));
             os.write((char*)&link->weight, sizeof(link->weight));
         }
     }

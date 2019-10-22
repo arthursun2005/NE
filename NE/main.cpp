@@ -8,6 +8,7 @@
 
 #include <iostream>
 #include <iomanip>
+#include <thread>
 #include "population.h"
 
 ne_population* population;
@@ -549,11 +550,11 @@ struct HANDDIGITS
     }
 };
 
-typedef DIR obj_type;
+typedef Pendulum obj_type;
 
 void initialize() {
-    std::ifstream is("settings.ne");
-    settings.read(is);
+    std::ifstream is("settings");
+    settings = ne_settings(is);
     is.close();
     population = new ne_population(settings, obj_type::input_size, obj_type::output_size);
 }
@@ -574,7 +575,7 @@ int main(int argc, const char * argv[]) {
     
     obj_type obj;
     
-    for(int n = 0; n < gens; ++n) {
+    for(int n = 0; n < gens; ++n) {        
         for(ne_genome* g : population->genomes) {
             obj.run(g, false);
             g->fitness = obj.fitness;

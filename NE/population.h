@@ -14,32 +14,75 @@
 
 struct ne_settings {
     double mutate_add_prob;
+    double species_distance;
     size_t population;
     
     ne_settings() {}
     
-    ne_settings(double mutate_add_prob, size_t population) : mutate_add_prob(mutate_add_prob), population(population) {}
+    ne_settings(double mutate_add_prob, double species_distance, size_t population) : mutate_add_prob(mutate_add_prob), species_distance(species_distance), population(population) {}
     
-    void read(std::ifstream& is) {
-        is >> mutate_add_prob >> population;
+    ne_settings(std::ifstream& is) {
+        is >> mutate_add_prob >> species_distance >> population;
     }
 };
 
+struct ne_species {
+    std::vector<ne_genome*> genomes;
+    size_t offsprings;
+    double average_fitness;
+};
+
+inline double ne_distance(ne_genome* g1, ne_genome* g2) {
+    std::vector<ne_link*>::iterator i1 = g1->links.begin();
+    std::vector<ne_link*>::iterator i2 = g2->links.begin();
+    std::vector<ne_link*>::iterator e1 = g1->links.end();
+    std::vector<ne_link*>::iterator e2 = g2->links.end();
+    
+    double e = 0.0;
+    
+    while(i1 != e1 || i2 != e2) {
+        if(i1 == e1 || (i2 != e2 && (*i2)->id < (*i1)->id)) {
+            e += (*i2)->weight * (*i2)->weight;
+            ++i2;
+            continue;
+        }
+        
+        if(i2 == e2 || (i1 != e1 && (*i1)->id < (*i2)->id)) {
+            e += (*i1)->weight * (*i1)->weight;
+            ++i1;
+            continue;
+        }
+        
+        if((*i1)->id == (*i2)->id) {
+            double d = (*i2)->weight - (*i1)->weight;
+            e += d * d;
+            ++i1;
+            ++i2;
+            continue;
+        }
+    }
+    
+    return e;
+}
+
 struct ne_population {
     double average_fitness;
+    size_t link_ids;
     
     ne_settings settings;
     std::vector<ne_genome*> genomes;
+    std::vector<ne_species*> species;
     
-    ne_population(const ne_settings& _settings, size_t input_size, size_t output_size) : settings(_settings) {
+    ne_population(const ne_settings& _settings, size_t input_size, size_t output_size) : settings(_settings), link_ids(0) {
         genomes.resize(settings.population);
         
         for(ne_genome*& g : genomes) {
             g = new ne_genome(input_size, output_size);
+            g->mutate_add_link(&link_ids);
         }
     }
     
-    ne_population(const ne_population& population) : settings(population.settings) {
+    ne_population(const ne_population& population) : settings(population.settings), link_ids(population.link_ids) {
         genomes.resize(settings.population);
         
         for(size_t i = 0; i != settings.population; ++i) {
@@ -49,6 +92,7 @@ struct ne_population {
     
     ne_population(std::ifstream& is) {
         is.read((char*)&settings, sizeof(settings));
+        is.read((char*)&link_ids, sizeof(link_ids));
         genomes.resize(settings.population);
         for(ne_genome*& g : genomes)
             g = new ne_genome(is);
@@ -62,57 +106,97 @@ struct ne_population {
     }
     
     ne_genome* analyse() {
-        average_fitness = 0.0;
-        
         for(ne_genome* g : genomes) {
-            g->fitness = fmax(0.0, g->fitness);
-            average_fitness += g->fitness;
+            add_to_species(g);
         }
         
-        average_fitness /= (double) settings.population;
+        average_fitness = 0.0;
         
-        std::sort(genomes.begin(), genomes.end(), [] (ne_genome* a, ne_genome* b) {
+        for(ne_species* q : species) {
+            q->average_fitness = 0.0;
+            
+            for(ne_genome* g : q->genomes) {
+                g->fitness = fmax(0.0, g->fitness);
+                q->average_fitness += g->fitness;
+            }
+            
+            q->average_fitness /= (double) q->genomes.size();
+            
+            average_fitness += q->average_fitness;
+            
+            std::sort(q->genomes.begin(), q->genomes.end(), [] (ne_genome* a, ne_genome* b) {
+                return a->fitness > b->fitness;
+            });
+        }
+        
+        average_fitness /= (double) species.size();
+        
+        size_t sum = settings.population;
+        
+        if(average_fitness != 0.0) {
+            for(ne_species* q : species) {
+                q->offsprings = (size_t)floor(q->average_fitness / average_fitness);
+                sum -= q->offsprings;
+            }
+        }
+        
+        (*std::min_element(species.begin(), species.end(), [] (ne_species* a, ne_species* b) {
+            return a->average_fitness > b->average_fitness;
+        }))->offsprings += sum;
+        
+        return *std::min_element(genomes.begin(), genomes.end(), [] (ne_genome* a, ne_genome* b) {
             return a->fitness > b->fitness;
         });
-        
-        return genomes.front();
     }
     
     void reproduce() {
         std::vector<ne_genome*> babies;
         
-        if(average_fitness != 0.0) {
-            for(ne_genome* g : genomes) {
-                size_t offsprings = (size_t)floor(g->fitness / average_fitness);
-                
-                for(size_t n = 0; n != offsprings; ++n)
-                    babies.push_back(breed(g));
-            }
-        }
-        
-        size_t leftover = settings.population - babies.size();
-        for(ne_genome* g : genomes) {
-            if(leftover <= 0) break;
-            babies.push_back(breed(g));
-            --leftover;
+        for(ne_species* q : species) {
+            for(size_t n = 0; n != q->offsprings; ++n)
+                babies.push_back(breed(q->genomes[ne_random(0lu, q->genomes.size()/2)]));
         }
         
         for(ne_genome* g : genomes)
             delete g;
+        
+        for(ne_species* q : species)
+            delete q;
+        
+        species.clear();
         
         genomes = babies;
     }
     
     ne_genome* breed(ne_genome* g) {
         ne_genome* baby = new ne_genome(*g);
-        baby->mutate(settings.mutate_add_prob);
+        baby->mutate(settings.mutate_add_prob, &link_ids);
         return baby;
     }
     
     void write(std::ofstream& os) const {
         os.write((char*)&settings, sizeof(settings));
+        os.write((char*)&link_ids, sizeof(link_ids));
         for(ne_genome* g : genomes)
             g->write(os);
+    }
+    
+    void add_to_species(ne_genome* g) {
+        ne_species* sp = nullptr;
+        
+        for(ne_species* q : species) {
+            if(ne_distance(q->genomes.front(), g) <= settings.species_distance) {
+                sp = q;
+                break;
+            }
+        }
+        
+        if(!sp) {
+            sp = new ne_species();
+            species.push_back(sp);
+        }
+        
+        sp->genomes.push_back(g);
     }
     
 };
