@@ -30,7 +30,7 @@
 		8E99F092230FFA8D0051D8D9 /* ne.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = ne.h; sourceTree = "<group>"; };
 		8E99F09623108DF70051D8D9 /* genome.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = genome.h; sourceTree = "<group>"; };
 		8E99F099231091540051D8D9 /* population.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = population.h; sourceTree = "<group>"; };
-		8EF7C7452335FDCD0096EDC0 /* settings.ne */ = {isa = PBXFileReference; lastKnownFileType = text; path = settings.ne; sourceTree = "<group>"; };
+		8EF7C7452335FDCD0096EDC0 /* settings */ = {isa = PBXFileReference; lastKnownFileType = text; path = settings; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -67,7 +67,7 @@
 				8E99F099231091540051D8D9 /* population.h */,
 				8E99F09623108DF70051D8D9 /* genome.h */,
 				8E99F092230FFA8D0051D8D9 /* ne.h */,
-				8EF7C7452335FDCD0096EDC0 /* settings.ne */,
+				8EF7C7452335FDCD0096EDC0 /* settings */,
 				8E1E71F5232F903A00E48057 /* train-images-idx3-ubyte */,
 				8E1E71F4232F903900E48057 /* train-labels-idx1-ubyte */,
 			);

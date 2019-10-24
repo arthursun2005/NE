@@ -146,7 +146,7 @@ struct ne_genome {
     }
     
     void mutate_weight() {
-        links[ne_random(0lu, links.size() - 1)]->weight += ne_random(-1.0, 1.0);
+        links[ne_random(0lu, links.size() - 1)]->weight += ne_random(-2.0, 2.0);
     }
     
     void add(ne_link* link) {
