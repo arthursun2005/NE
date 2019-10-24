@@ -203,7 +203,7 @@ struct ne_population {
             ne_species* sp = nullptr;
             
             for(ne_species* q : species) {
-                if(ne_distance(q->genomes.front(), g) <= 16.0) {
+                if(ne_distance(q->genomes.front(), g) <= 0.0) {
                     sp = q;
                     break;
                 }
