@@ -435,7 +435,7 @@ struct DIR
         float d;
         for(size_t n = 0; n < q; ++n) {
             inputs[0]->value = 1.0;
-            inputs[1]->value = a;
+            inputs[1]->value = a;//ne_random(-10.0, 10.0);
             
             gen->flush();
             gen->activate();
@@ -550,7 +550,7 @@ struct HANDDIGITS
     }
 };
 
-typedef Pendulum obj_type;
+typedef DIR obj_type;
 
 void initialize() {
     std::ifstream is("settings");
@@ -584,6 +584,7 @@ int main(int argc, const char * argv[]) {
         best = population->analyse();
 
         std::cout << n << " " << best->fitness << '\n';
+        std::cout << population->species.size() << '\n';
         
         if((n%pe) == (pe - 1)) {
             float f = 0.0;

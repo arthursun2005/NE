@@ -165,7 +165,7 @@ struct ne_genome {
         
         if(ne_random(0.0, 1.0) < mutate_add_prob)
             mutate_add_node(link_ids);
-        
+
         mutate_add_link(link_ids);
     }
     
