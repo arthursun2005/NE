@@ -42,7 +42,6 @@ struct ne_link {
     ne_node* i;
     ne_node* j;
     
-    size_t id;
     double weight;
     
     ne_link(ne_node* i, ne_node* j) : i(i), j(j) {}

@@ -584,7 +584,6 @@ int main(int argc, const char * argv[]) {
         best = population->analyse();
 
         std::cout << n << " " << best->fitness << '\n';
-        std::cout << population->species.size() << '\n';
         
         if((n%pe) == (pe - 1)) {
             float f = 0.0;
